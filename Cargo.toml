@@ -1,4 +1,4 @@
 [workspace]
 members = ["core"]
 
-workspace.resolver = "3"
+resolver = "3"

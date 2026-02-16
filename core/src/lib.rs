@@ -1,2 +1,2 @@
-mod registry;
-mod version;
+pub mod registry;
+pub mod version;

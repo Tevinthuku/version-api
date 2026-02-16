@@ -1,7 +1,7 @@
 use std::any::{Any, TypeId};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct VersionId(String);
+pub struct VersionId(String);
 
 impl From<&str> for VersionId {
     fn from(value: &str) -> Self {
@@ -17,9 +17,9 @@ pub(crate) trait InternalVersionChangeSetTransformer {
     ) -> Result<Box<dyn std::any::Any>, Box<dyn std::error::Error>>;
 }
 
-pub struct Version {
-    pub id: VersionId,
-    pub changes: Vec<Box<dyn InternalVersionChangeSetTransformer>>,
+pub(crate) struct Version {
+    pub(crate) id: VersionId,
+    pub(crate) changes: Vec<Box<dyn InternalVersionChangeSetTransformer>>,
 }
 
 // This trait is what users of the library will implement to define their version changesets
@@ -37,7 +37,7 @@ where
     T: VersionChangeSetTransformer + 'static,
 {
     fn head_version(&self) -> TypeId {
-        self.head_version()
+        VersionChangeSetTransformer::head_version(self)
     }
 
     fn transform(
@@ -47,7 +47,7 @@ where
         let input = value
             .downcast::<T::Input>()
             .map_err(|_| "Failed to downcast input value".to_string())?;
-        let output = self.transform(*input)?;
+        let output = VersionChangeSetTransformer::transform(self, *input)?;
         Ok(Box::new(output))
     }
 }

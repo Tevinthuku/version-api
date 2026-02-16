@@ -1,9 +1,6 @@
 use crate::version::{InternalVersionChangeSetTransformer, Version, VersionId};
 use itertools::Itertools;
-use std::{
-    any::{Any, TypeId},
-    collections::HashMap,
-};
+use std::{any::TypeId, collections::HashMap};
 
 #[derive(Default)]
 pub(crate) struct ApiResponseResourceRegistry {
@@ -31,14 +28,9 @@ impl ApiResponseResourceRegistry {
                 .iter()
                 // sorting in descending order, latest versions first
                 .sorted_by(|a, b| b.0.cmp(&a.0))
-                .take_while_inclusive(|(version, _)| version <= &&pinned_api_version);
-            for (version, transformer) in transformers {
-                println!("version: {:?}", version);
-
+                .take_while_inclusive(|(version, _)| *version <= &pinned_api_version);
+            for (_, transformer) in transformers {
                 response_body = transformer.transform(response_body)?;
-
-                let response_body_type_id = response_body.type_id();
-                println!("response_body_type_id: {:?}", response_body_type_id);
             }
         }
         Ok(response_body)

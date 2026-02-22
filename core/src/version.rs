@@ -46,6 +46,8 @@ where
     ) -> Result<Box<dyn std::any::Any>, Box<dyn std::error::Error>> {
         let input = value
             .downcast::<T::Input>()
+            // TODO: handle this error better in a separate PR:
+            
             .map_err(|_| "Failed to downcast input value".to_string())?;
         let output = VersionChangeSetTransformer::transform(self, *input)?;
         Ok(Box::new(output))

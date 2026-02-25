@@ -3,7 +3,7 @@ use itertools::Itertools;
 use std::{any::TypeId, collections::HashMap};
 
 #[derive(Default)]
-pub(crate) struct ApiResponseResourceRegistry {
+pub struct ApiResponseResourceRegistry {
     versions: HashMap<TypeId, ApiResourceVersionChanges>,
 }
 
@@ -13,7 +13,7 @@ struct ApiResourceVersionChanges {
 }
 
 impl ApiResponseResourceRegistry {
-    pub(crate) fn transform(
+    pub fn transform(
         &self,
         response_body: impl std::any::Any,
         pinned_api_version: impl Into<VersionId>,
@@ -28,15 +28,16 @@ impl ApiResponseResourceRegistry {
                 .iter()
                 // sorting in descending order, latest versions first
                 .sorted_by(|a, b| b.0.cmp(&a.0))
-                .take_while_inclusive(|(version, _)| *version <= &pinned_api_version);
-            for (_, transformer) in transformers {
+                .take_while(|(version, _)| *version >= &pinned_api_version);
+
+            for (_version, transformer) in transformers {
                 response_body = transformer.transform(response_body)?;
             }
         }
         Ok(response_body)
     }
 
-    pub(crate) fn register(&mut self, version: Version) {
+    pub fn register(&mut self, version: Version) {
         let version_change = version.id;
         for change in version.changes {
             let head_version = change.head_version();

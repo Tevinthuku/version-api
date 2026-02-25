@@ -9,7 +9,8 @@ impl From<&str> for VersionId {
     }
 }
 
-pub(crate) trait InternalVersionChangeSetTransformer {
+#[doc(hidden)]
+pub trait InternalVersionChangeSetTransformer {
     fn head_version(&self) -> TypeId;
     fn transform(
         &self,
@@ -17,9 +18,9 @@ pub(crate) trait InternalVersionChangeSetTransformer {
     ) -> Result<Box<dyn std::any::Any>, Box<dyn std::error::Error>>;
 }
 
-pub(crate) struct Version {
-    pub(crate) id: VersionId,
-    pub(crate) changes: Vec<Box<dyn InternalVersionChangeSetTransformer>>,
+pub struct Version {
+    pub id: VersionId,
+    pub changes: Vec<Box<dyn InternalVersionChangeSetTransformer>>,
 }
 
 // This trait is what users of the library will implement to define their version changesets
@@ -47,7 +48,6 @@ where
         let input = value
             .downcast::<T::Input>()
             // TODO: handle this error better in a separate PR:
-            
             .map_err(|_| "Failed to downcast input value".to_string())?;
         let output = VersionChangeSetTransformer::transform(self, *input)?;
         Ok(Box::new(output))

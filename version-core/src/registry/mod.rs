@@ -1,5 +1,7 @@
 mod response;
 
+pub use response::ApiResponseResourceRegistry;
+
 #[cfg(test)]
 mod tests {
     use std::any::TypeId;
@@ -104,10 +106,8 @@ mod tests {
             .transform(user_2, VersionId::from("v1"))
             .expect("Transformation failed");
 
-        let user_1 = transformed
-            .downcast::<UserWithMultipleStringAddresses>()
-            .unwrap();
+        let user_1 = transformed.downcast::<UserWithSingleAddress>().unwrap();
 
-        assert_eq!(user_1.addresses, vec!["123 Main St USA".to_string()]);
+        assert_eq!(user_1.address, "123 Main St USA".to_string());
     }
 }

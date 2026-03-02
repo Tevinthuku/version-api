@@ -1,7 +1,5 @@
 use version_core::{
-    ChangeHistory, VersionChange,
-    registry::ApiResponseResourceRegistry,
-    version::{VersionChange, VersionId},
+    ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry, version::VersionId,
 };
 
 #[derive(Debug)]
@@ -76,11 +74,8 @@ fn main() {
     };
 
     let transformed = registry.transform(user, VersionId::from("1.0.0")).unwrap();
-    let legacy_user = transformed
+    let user_with_string_addresses = transformed
         .downcast::<CollapseUserAddressesToStrings>()
         .unwrap();
-    println!("Legacy user: {:?}", legacy_user);
-
-    let v = CollapseUserAddressesToStrings::below_version();
-    println!("Version: {:?}", v);
+    println!("user: {:?}", user_with_string_addresses);
 }

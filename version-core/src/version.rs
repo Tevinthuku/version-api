@@ -23,8 +23,20 @@ pub struct Version {
     pub changes: Vec<Box<dyn InternalVersionChangeSetTransformer>>,
 }
 
-// This trait is what users of the library will implement to define their version changesets
-pub trait VersionChangeSetTransformer {
+pub trait ChangeSet {
+    fn below_version() -> VersionId;
+    fn description() -> &'static str;
+}
+
+pub trait ChangeLog {
+    type Head: Any + 'static;
+
+    fn version_ids() -> Vec<VersionId>;
+    fn register(registry: &mut crate::registry::ApiResponseResourceRegistry);
+}
+
+// This trait is implemented by generated transformer types.
+pub trait ChangeSetTransformer {
     type Input: Any + 'static;
     type Output: Any + 'static;
 
@@ -35,10 +47,10 @@ pub trait VersionChangeSetTransformer {
 
 impl<T> InternalVersionChangeSetTransformer for T
 where
-    T: VersionChangeSetTransformer + 'static,
+    T: ChangeSetTransformer + 'static,
 {
     fn head_version(&self) -> TypeId {
-        VersionChangeSetTransformer::head_version(self)
+        ChangeSetTransformer::head_version(self)
     }
 
     fn transform(
@@ -49,7 +61,7 @@ where
             .downcast::<T::Input>()
             // TODO: handle this error better in a separate PR:
             .map_err(|_| "Failed to downcast input value".to_string())?;
-        let output = VersionChangeSetTransformer::transform(self, *input)?;
+        let output = ChangeSetTransformer::transform(self, *input)?;
         Ok(Box::new(output))
     }
 }

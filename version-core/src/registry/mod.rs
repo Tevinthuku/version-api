@@ -8,7 +8,7 @@ mod tests {
 
     use crate::{
         registry::response::ApiResponseResourceRegistry,
-        version::{Version, VersionChangeSetTransformer, VersionId},
+        version::{ChangeSetTransformer, Version, VersionId},
     };
 
     struct UserWithSingleAddress {
@@ -32,7 +32,7 @@ mod tests {
 
     struct CollapseAddressesToAddress;
 
-    impl VersionChangeSetTransformer for CollapseAddressesToAddress {
+    impl ChangeSetTransformer for CollapseAddressesToAddress {
         type Input = UserWithMultipleStringAddresses;
         type Output = UserWithSingleAddress;
 
@@ -56,7 +56,7 @@ mod tests {
 
     struct CollapseAddressesToListOfStr;
 
-    impl VersionChangeSetTransformer for CollapseAddressesToListOfStr {
+    impl ChangeSetTransformer for CollapseAddressesToListOfStr {
         type Input = User;
         type Output = UserWithMultipleStringAddresses;
 
@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[test]
-    fn test_transformation_works() {
+    fn test_transformation_works_for_legacy_version() {
         let mut registry = ApiResponseResourceRegistry::default();
 
         let user_2 = User {
@@ -94,20 +94,49 @@ mod tests {
         };
 
         registry.register(Version {
-            id: VersionId::from("v1"),
+            id: VersionId::from("1.0.0"),
             changes: vec![Box::new(CollapseAddressesToAddress)],
         });
         registry.register(Version {
-            id: VersionId::from("v2"),
+            id: VersionId::from("2.0.0"),
             changes: vec![Box::new(CollapseAddressesToListOfStr)],
         });
 
         let transformed = registry
-            .transform(user_2, VersionId::from("v1"))
+            .transform(user_2, VersionId::from("0.9.0"))
             .expect("Transformation failed");
 
         let user_1 = transformed.downcast::<UserWithSingleAddress>().unwrap();
 
         assert_eq!(user_1.address, "123 Main St USA".to_string());
+    }
+
+    #[test]
+    fn test_latest_version_returns_head_unchanged() {
+        let mut registry = ApiResponseResourceRegistry::default();
+
+        registry.register(Version {
+            id: VersionId::from("1.0.0"),
+            changes: vec![Box::new(CollapseAddressesToAddress)],
+        });
+        registry.register(Version {
+            id: VersionId::from("2.0.0"),
+            changes: vec![Box::new(CollapseAddressesToListOfStr)],
+        });
+
+        let user = User {
+            addresses: vec![Address {
+                location: "123 Main St".to_string(),
+                country: Some("USA".to_string()),
+            }],
+        };
+
+        let transformed = registry
+            .transform(user, VersionId::from("2.0.0"))
+            .expect("Transformation failed");
+        let latest = transformed.downcast::<User>().unwrap();
+        assert_eq!(latest.addresses.len(), 1);
+        assert_eq!(latest.addresses[0].location, "123 Main St");
+        assert_eq!(latest.addresses[0].country.as_deref(), Some("USA"));
     }
 }

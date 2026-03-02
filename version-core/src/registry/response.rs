@@ -28,7 +28,8 @@ impl ApiResponseResourceRegistry {
                 .iter()
                 // sorting in descending order, latest versions first
                 .sorted_by(|a, b| b.0.cmp(&a.0))
-                .take_while(|(version, _)| *version >= &pinned_api_version);
+                // apply transformations introduced above the pinned version boundary
+                .take_while(|(version, _)| &pinned_api_version < *version);
 
             for (_version, transformer) in transformers {
                 response_body = transformer.transform(response_body)?;

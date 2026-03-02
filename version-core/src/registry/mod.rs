@@ -8,7 +8,7 @@ mod tests {
 
     use crate::{
         registry::response::ApiResponseResourceRegistry,
-        version::{ChangeSetTransformer, Version, VersionId},
+        version::{Version, VersionChangeTransformer, VersionId},
     };
 
     struct UserWithSingleAddress {
@@ -32,7 +32,7 @@ mod tests {
 
     struct CollapseAddressesToAddress;
 
-    impl ChangeSetTransformer for CollapseAddressesToAddress {
+    impl VersionChangeTransformer for CollapseAddressesToAddress {
         type Input = UserWithMultipleStringAddresses;
         type Output = UserWithSingleAddress;
 
@@ -56,7 +56,7 @@ mod tests {
 
     struct CollapseAddressesToListOfStr;
 
-    impl ChangeSetTransformer for CollapseAddressesToListOfStr {
+    impl VersionChangeTransformer for CollapseAddressesToListOfStr {
         type Input = User;
         type Output = UserWithMultipleStringAddresses;
 

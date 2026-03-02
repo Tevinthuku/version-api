@@ -35,7 +35,7 @@ pub trait ChangeHistory {
 }
 
 // This trait is implemented by generated transformer types.
-pub trait ChangeSetTransformer {
+pub trait VersionChangeTransformer {
     type Input: Any + 'static;
     type Output: Any + 'static;
 
@@ -46,10 +46,10 @@ pub trait ChangeSetTransformer {
 
 impl<T> InternalVersionChangeSetTransformer for T
 where
-    T: ChangeSetTransformer + 'static,
+    T: VersionChangeTransformer + 'static,
 {
     fn head_version(&self) -> TypeId {
-        ChangeSetTransformer::head_version(self)
+        VersionChangeTransformer::head_version(self)
     }
 
     fn transform(
@@ -60,7 +60,7 @@ where
             .downcast::<T::Input>()
             // TODO: handle this error better in a separate PR:
             .map_err(|_| "Failed to downcast input value".to_string())?;
-        let output = ChangeSetTransformer::transform(self, *input)?;
+        let output = VersionChangeTransformer::transform(self, *input)?;
         Ok(Box::new(output))
     }
 }

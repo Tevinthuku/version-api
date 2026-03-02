@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::{ToTokens, format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
@@ -121,10 +121,13 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
     let mut transformer_impls = Vec::new();
     let mut register_entries = Vec::new();
 
-    for i in 0..changes.len() {
-        let from_type = &chain[i];
-        let to_type = &chain[i + 1];
-        let transformer_name = format_ident!("__{}Transformer_{}", change_history_type, i);
+    for chunk in changes.chunks(2) {
+        let from_type = &chunk[0];
+        let to_type = &chunk[1];
+        let from_type_str = from_type.into_token_stream().to_string();
+        let to_type_str = to_type.into_token_stream().to_string();
+        let transformer_name =
+            format_ident!("__From_{}_To_{}Transformer", from_type_str, to_type_str);
 
         transformer_structs.push(quote! {
             #[doc(hidden)]
@@ -133,7 +136,7 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
         });
 
         transformer_impls.push(quote! {
-            impl version_core::version::ChangeSetTransformer for #transformer_name {
+            impl version_core::version::VersionChangeTransformer for #transformer_name {
                 type Input = #from_type;
                 type Output = #to_type;
 

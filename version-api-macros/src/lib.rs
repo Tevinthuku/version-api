@@ -121,9 +121,10 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
     let mut transformer_impls = Vec::new();
     let mut register_entries = Vec::new();
 
-    for chunk in changes.chunks(2) {
-        let from_type = &chunk[0];
-        let to_type = &chunk[1];
+    for i in 0..changes.len() {
+        let from_type = &chain[i];
+        let to_type = &chain[i + 1];
+
         let from_type_str = from_type.into_token_stream().to_string();
         let to_type_str = to_type.into_token_stream().to_string();
         let transformer_name =

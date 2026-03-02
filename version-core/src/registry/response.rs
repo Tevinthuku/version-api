@@ -1,4 +1,4 @@
-use crate::version::{InternalVersionChangeSetTransformer, Version, VersionId};
+use crate::version::{ErasedVersionChangeTransformer, Version, VersionId};
 use itertools::Itertools;
 use std::{any::TypeId, collections::HashMap};
 
@@ -9,7 +9,7 @@ pub struct ApiResponseResourceRegistry {
 
 #[derive(Default)]
 struct ApiResourceVersionChanges {
-    data: HashMap<VersionId, Box<dyn InternalVersionChangeSetTransformer>>,
+    data: HashMap<VersionId, Box<dyn ErasedVersionChangeTransformer>>,
 }
 
 impl ApiResponseResourceRegistry {
@@ -31,7 +31,7 @@ impl ApiResponseResourceRegistry {
                 // apply transformations introduced above the pinned version boundary
                 .take_while(|(version, _)| &pinned_api_version < *version);
 
-            for (_version, transformer) in transformers {
+            for (_, transformer) in transformers {
                 response_body = transformer.transform(response_body)?;
             }
         }

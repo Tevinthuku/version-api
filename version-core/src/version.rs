@@ -10,7 +10,13 @@ impl From<&str> for VersionId {
 }
 
 #[doc(hidden)]
-pub trait InternalVersionChangeSetTransformer {
+// Internal type-erased adapter used by the registry.
+// `VersionChangeTransformer` has associated types (`Input`/`Output`), so each
+// implementation has a different concrete type and can't be stored directly
+// in one heterogeneous collection. This trait erases those concrete types by
+// accepting/returning `Box<dyn Any>`, allowing us to keep all transformers in
+// the same registry map and invoke them dynamically at runtime.
+pub trait ErasedVersionChangeTransformer {
     fn head_version(&self) -> TypeId;
     fn transform(
         &self,
@@ -20,7 +26,7 @@ pub trait InternalVersionChangeSetTransformer {
 
 pub struct Version {
     pub id: VersionId,
-    pub changes: Vec<Box<dyn InternalVersionChangeSetTransformer>>,
+    pub changes: Vec<Box<dyn ErasedVersionChangeTransformer>>,
 }
 
 pub trait VersionChange {
@@ -34,7 +40,6 @@ pub trait ChangeHistory {
     fn register(registry: &mut crate::registry::ApiResponseResourceRegistry);
 }
 
-// This trait is implemented by generated transformer types.
 pub trait VersionChangeTransformer {
     type Input: Any + 'static;
     type Output: Any + 'static;
@@ -44,7 +49,7 @@ pub trait VersionChangeTransformer {
     fn transform(&self, value: Self::Input) -> Result<Self::Output, Box<dyn std::error::Error>>;
 }
 
-impl<T> InternalVersionChangeSetTransformer for T
+impl<T> ErasedVersionChangeTransformer for T
 where
     T: VersionChangeTransformer + 'static,
 {

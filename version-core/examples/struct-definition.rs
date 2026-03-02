@@ -1,5 +1,7 @@
 use version_core::{
-    ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry, version::VersionId,
+    ChangeHistory, VersionChange,
+    registry::ApiResponseResourceRegistry,
+    version::{VersionChange, VersionId},
 };
 
 #[derive(Debug)]
@@ -78,4 +80,7 @@ fn main() {
         .downcast::<CollapseUserAddressesToStrings>()
         .unwrap();
     println!("Legacy user: {:?}", legacy_user);
+
+    let v = CollapseUserAddressesToStrings::below_version();
+    println!("Version: {:?}", v);
 }

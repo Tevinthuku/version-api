@@ -93,22 +93,22 @@ fn parse_description_attr(attrs: &[Attribute]) -> syn::Result<LitStr> {
     }
 }
 
-#[proc_macro_derive(ChangeLog, attributes(head, changes))]
-pub fn changelog_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(ChangeHistory, attributes(head, changes))]
+pub fn change_history_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    match changelog_impl(&input) {
+    match change_history_impl(&input) {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),
     }
 }
 
-fn changelog_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
-    let changelog_type = &input.ident;
+fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
+    let change_history_type = &input.ident;
     let head = parse_head_attr(&input.attrs)?;
     let changes = parse_changes_attr(&input.attrs)?;
     if changes.is_empty() {
         return Err(syn::Error::new(
-            changelog_type.span(),
+            change_history_type.span(),
             "#[changes(...)] list must not be empty",
         ));
     }
@@ -124,7 +124,7 @@ fn changelog_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> 
     for i in 0..changes.len() {
         let from_type = &chain[i];
         let to_type = &chain[i + 1];
-        let transformer_name = format_ident!("__{}Transformer_{}", changelog_type, i);
+        let transformer_name = format_ident!("__{}Transformer_{}", change_history_type, i);
 
         transformer_structs.push(quote! {
             #[doc(hidden)]
@@ -181,7 +181,7 @@ fn changelog_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> 
         #(#transformer_structs)*
         #(#transformer_impls)*
 
-        impl version_core::version::ChangeLog for #changelog_type {
+        impl version_core::version::ChangeHistory for #change_history_type {
             type Head = #head;
 
             fn version_ids() -> ::std::vec::Vec<version_core::version::VersionId> {
@@ -202,13 +202,13 @@ fn changelog_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> 
             }
         }
 
-        impl #changelog_type {
+        impl #change_history_type {
             pub fn version_ids() -> ::std::vec::Vec<version_core::version::VersionId> {
-                <Self as version_core::version::ChangeLog>::version_ids()
+                <Self as version_core::version::ChangeHistory>::version_ids()
             }
 
             pub fn register(registry: &mut version_core::registry::ApiResponseResourceRegistry) {
-                <Self as version_core::version::ChangeLog>::register(registry)
+                <Self as version_core::version::ChangeHistory>::register(registry)
             }
         }
 

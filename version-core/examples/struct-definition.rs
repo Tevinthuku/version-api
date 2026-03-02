@@ -1,5 +1,5 @@
 use version_core::{
-    ChangeLog, ChangeSet, registry::ApiResponseResourceRegistry, version::VersionId,
+    ChangeHistory, ChangeSet, registry::ApiResponseResourceRegistry, version::VersionId,
 };
 
 #[derive(Debug)]
@@ -52,7 +52,7 @@ impl From<CollapseUserAddressesToStrings> for CollapseUserAddressToSingleString 
     }
 }
 
-#[derive(ChangeLog)]
+#[derive(ChangeHistory)]
 #[head(User)]
 #[changes(CollapseUserAddressesToStrings, CollapseUserAddressToSingleString)]
 struct UserChanges;

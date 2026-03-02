@@ -28,9 +28,8 @@ pub trait ChangeSet {
     fn description() -> &'static str;
 }
 
-pub trait ChangeLog {
+pub trait ChangeHistory {
     type Head: Any + 'static;
-
     fn version_ids() -> Vec<VersionId>;
     fn register(registry: &mut crate::registry::ApiResponseResourceRegistry);
 }

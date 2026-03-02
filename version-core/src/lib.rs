@@ -1,4 +1,4 @@
 pub mod registry;
 pub mod version;
 
-pub use version_api_macros::{ChangeHistory, ChangeSet};
+pub use version_api_macros::{ChangeHistory, VersionChange};

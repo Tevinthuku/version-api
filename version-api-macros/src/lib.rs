@@ -7,22 +7,22 @@ use syn::{
     Attribute, DeriveInput, Expr, ExprLit, Ident, Lit, LitStr, Meta, Token, Type, parse_macro_input,
 };
 
-#[proc_macro_derive(ChangeSet, attributes(version, description))]
-pub fn changeset_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(VersionChange, attributes(version, description))]
+pub fn version_change_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    match changeset_impl(&input) {
+    match version_change_impl(&input) {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),
     }
 }
 
-fn changeset_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
+fn version_change_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let ty = &input.ident;
     let below = parse_below_attr(&input.attrs)?;
     let description = parse_description_attr(&input.attrs)?;
 
     Ok(quote! {
-        impl version_core::version::ChangeSet for #ty {
+        impl version_core::version::VersionChange for #ty {
             fn below_version() -> version_core::version::VersionId {
                 version_core::version::VersionId::from(#below)
             }
@@ -138,7 +138,7 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
                 type Output = #to_type;
 
                 fn description(&self) -> &str {
-                    <#to_type as version_core::version::ChangeSet>::description()
+                    <#to_type as version_core::version::VersionChange>::description()
                 }
 
                 fn head_version(&self) -> ::std::any::TypeId {
@@ -158,14 +158,14 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
 
         register_entries.push(quote! {
             registry.register(version_core::version::Version {
-                id: <#to_type as version_core::version::ChangeSet>::below_version(),
+                id: <#to_type as version_core::version::VersionChange>::below_version(),
                 changes: vec![::std::boxed::Box::new(#transformer_name)],
             });
         });
     }
 
     let version_ids = changes.iter().map(|ty| {
-        quote! { <#ty as version_core::version::ChangeSet>::below_version() }
+        quote! { <#ty as version_core::version::VersionChange>::below_version() }
     });
 
     let mut from_assertions = Vec::new();

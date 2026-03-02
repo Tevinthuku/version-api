@@ -23,7 +23,7 @@ pub struct Version {
     pub changes: Vec<Box<dyn InternalVersionChangeSetTransformer>>,
 }
 
-pub trait ChangeSet {
+pub trait VersionChange {
     fn below_version() -> VersionId;
     fn description() -> &'static str;
 }

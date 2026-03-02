@@ -1,5 +1,5 @@
 use version_core::{
-    ChangeHistory, ChangeSet, registry::ApiResponseResourceRegistry, version::VersionId,
+    ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry, version::VersionId,
 };
 
 #[derive(Debug)]
@@ -13,7 +13,7 @@ struct User {
     addresses: Vec<Address>,
 }
 
-#[derive(Debug, ChangeSet)]
+#[derive(Debug, VersionChange)]
 #[version(below = "1.0.0")]
 #[description = "Legacy users expect one address string"]
 #[allow(dead_code)]
@@ -22,7 +22,7 @@ struct CollapseUserAddressToSingleString {
     address: String,
 }
 
-#[derive(Debug, ChangeSet)]
+#[derive(Debug, VersionChange)]
 #[version(below = "2.0.0")]
 #[description = "Users before 2.0.0 expect addresses as plain strings"]
 struct CollapseUserAddressesToStrings {
@@ -55,11 +55,11 @@ impl From<CollapseUserAddressesToStrings> for CollapseUserAddressToSingleString 
 #[derive(ChangeHistory)]
 #[head(User)]
 #[changes(CollapseUserAddressesToStrings, CollapseUserAddressToSingleString)]
-struct UserChanges;
+struct UserResponseHistoryVersions;
 
 fn main() {
     let mut registry = ApiResponseResourceRegistry::default();
-    UserChanges::register(&mut registry);
+    UserResponseHistoryVersions::register(&mut registry);
 
     let user = User {
         name: "John Doe".to_string(),

@@ -1,4 +1,16 @@
-use version_core::{ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry};
+use version_core::{
+    ApiVersion, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
+};
+
+#[derive(ApiVersion)]
+pub enum MyApiVersions {
+    #[version("2.0.0")]
+    V2_0_0,
+    #[version("1.0.0")]
+    V1_0_0,
+    #[version("0.9.0")]
+    V0_9_0,
+}
 
 #[derive(Debug, Clone)]
 struct Address {
@@ -12,7 +24,7 @@ struct User {
 }
 
 #[derive(Debug, VersionChange)]
-#[version(below = "1.0.0")]
+#[version(below = MyApiVersions::V1_0_0)]
 #[description = "Legacy users expect one address string"]
 #[allow(dead_code)]
 struct CollapseUserAddressToSingleString {
@@ -21,7 +33,7 @@ struct CollapseUserAddressToSingleString {
 }
 
 #[derive(Debug, VersionChange)]
-#[version(below = "2.0.0")]
+#[version(below = MyApiVersions::V2_0_0)]
 #[description = "Users before 2.0.0 expect addresses as plain strings"]
 struct CollapseUserAddressesToStrings {
     name: String,
@@ -68,7 +80,9 @@ fn main() {
         ],
     };
 
-    let transformed = registry.transform(user.clone(), "1.0.0").unwrap();
+    let transformed = registry
+        .transform(user.clone(), MyApiVersions::V1_0_0)
+        .unwrap();
     let user_with_string_addresses = transformed
         .downcast::<CollapseUserAddressesToStrings>()
         .unwrap();
@@ -77,7 +91,9 @@ fn main() {
         vec!["123 Main St", "456 Main St"]
     );
 
-    let transformed = registry.transform(user.clone(), "0.9.0").unwrap();
+    let transformed = registry
+        .transform(user.clone(), MyApiVersions::V0_9_0)
+        .unwrap();
     let user_with_single_address = transformed
         .downcast::<CollapseUserAddressToSingleString>()
         .unwrap();

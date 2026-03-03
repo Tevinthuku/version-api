@@ -2,12 +2,12 @@ use version_core::{
     ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry, version::VersionId,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Address {
     location: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct User {
     name: String,
     addresses: Vec<Address>,
@@ -32,7 +32,6 @@ struct CollapseUserAddressesToStrings {
 
 impl From<User> for CollapseUserAddressesToStrings {
     fn from(user: User) -> Self {
-        println!("Transforming User -> CollapseUserAddressesToStrings");
         Self {
             name: user.name,
             addresses: user.addresses.into_iter().map(|a| a.location).collect(),
@@ -42,11 +41,9 @@ impl From<User> for CollapseUserAddressesToStrings {
 
 impl From<CollapseUserAddressesToStrings> for CollapseUserAddressToSingleString {
     fn from(user: CollapseUserAddressesToStrings) -> Self {
-        println!(
-            "Transforming CollapseUserAddressesToStrings -> CollapseUserAddressToSingleString"
-        );
         Self {
             name: user.name,
+            // the users on less than v1 expect a single address, so its fine to just take the first one
             address: user.addresses.first().cloned().unwrap_or_default(),
         }
     }
@@ -73,9 +70,22 @@ fn main() {
         ],
     };
 
-    let transformed = registry.transform(user, VersionId::from("1.0.0")).unwrap();
+    let transformed = registry
+        .transform(user.clone(), VersionId::from("1.0.0"))
+        .unwrap();
     let user_with_string_addresses = transformed
         .downcast::<CollapseUserAddressesToStrings>()
         .unwrap();
-    println!("user: {:?}", user_with_string_addresses);
+    assert_eq!(
+        user_with_string_addresses.addresses,
+        vec!["123 Main St", "456 Main St"]
+    );
+
+    let transformed = registry
+        .transform(user.clone(), VersionId::from("0.9.0"))
+        .unwrap();
+    let user_with_single_address = transformed
+        .downcast::<CollapseUserAddressToSingleString>()
+        .unwrap();
+    assert_eq!(user_with_single_address.address, "123 Main St".to_string());
 }

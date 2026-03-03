@@ -1,6 +1,4 @@
-use version_core::{
-    ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry, version::VersionId,
-};
+use version_core::{ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry};
 
 #[derive(Debug, Clone)]
 struct Address {
@@ -70,9 +68,7 @@ fn main() {
         ],
     };
 
-    let transformed = registry
-        .transform(user.clone(), VersionId::from("1.0.0"))
-        .unwrap();
+    let transformed = registry.transform(user.clone(), "1.0.0").unwrap();
     let user_with_string_addresses = transformed
         .downcast::<CollapseUserAddressesToStrings>()
         .unwrap();
@@ -81,9 +77,7 @@ fn main() {
         vec!["123 Main St", "456 Main St"]
     );
 
-    let transformed = registry
-        .transform(user.clone(), VersionId::from("0.9.0"))
-        .unwrap();
+    let transformed = registry.transform(user.clone(), "0.9.0").unwrap();
     let user_with_single_address = transformed
         .downcast::<CollapseUserAddressToSingleString>()
         .unwrap();

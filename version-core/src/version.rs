@@ -3,9 +3,9 @@ use std::any::{Any, TypeId};
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct VersionId(String);
 
-impl From<&str> for VersionId {
-    fn from(value: &str) -> Self {
-        VersionId(value.to_string())
+impl<S: Into<String>> From<S> for VersionId {
+    fn from(value: S) -> Self {
+        VersionId(value.into())
     }
 }
 

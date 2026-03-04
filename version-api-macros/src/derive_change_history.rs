@@ -34,8 +34,13 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
         let from_type = &window[0];
         let to_type = &window[1];
 
-        let from_type_str = from_type.into_token_stream().to_string();
-        let to_type_str = to_type.into_token_stream().to_string();
+        let mut from_type_str = from_type.into_token_stream().to_string();
+        // Sanitize the type name for use as a Rust identifier (e.g. `Foo<Bar>` → `FooBar`)
+        from_type_str.retain(|c| c.is_ascii_alphabetic() || c == '_');
+
+        let mut to_type_str = to_type.into_token_stream().to_string();
+        // Sanitize the type name for use as a Rust identifier (e.g. `Foo<Bar>` → `FooBar`)
+        to_type_str.retain(|c| c.is_ascii_alphabetic() || c == '_');
 
         let transformer_name =
             format_ident!("__From_{}_To_{}Transformer", from_type_str, to_type_str);

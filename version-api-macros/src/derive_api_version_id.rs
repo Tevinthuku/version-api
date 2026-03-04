@@ -18,7 +18,7 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
         _ => {
             return Err(syn::Error::new(
                 enum_name.span(),
-                "ApiVersion can only be derived on enums",
+                "ApiVersionId can only be derived on enums",
             ));
         }
     };
@@ -30,7 +30,7 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
         if !variant.fields.is_empty() {
             return Err(syn::Error::new(
                 variant.ident.span(),
-                "ApiVersion variants must be unit variants (no fields)",
+                "ApiVersionId variants must be unit variants (no fields)",
             ));
         }
 

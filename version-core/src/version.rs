@@ -61,10 +61,12 @@ where
         &self,
         value: Box<dyn std::any::Any>,
     ) -> Result<Box<dyn std::any::Any>, Box<dyn std::error::Error>> {
-        let input = value
-            .downcast::<T::Input>()
-            // TODO: handle this error better in a separate PR:
-            .map_err(|_| "Failed to downcast input value".to_string())?;
+        let input = value.downcast::<T::Input>().map_err(|_| {
+            Box::<dyn std::error::Error>::from(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to downcast input value",
+            ))
+        })?;
         let output = VersionChangeTransformer::transform(self, *input)?;
         Ok(Box::new(output))
     }

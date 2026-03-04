@@ -1,5 +1,6 @@
-mod api_version;
+mod api_version_id;
 mod change_history;
+mod version_change;
 
 #[proc_macro_derive(ChangeHistory, attributes(head, changes))]
 pub fn change_history_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -8,10 +9,10 @@ pub fn change_history_derive(input: proc_macro::TokenStream) -> proc_macro::Toke
 
 #[proc_macro_derive(VersionChange, attributes(version, description))]
 pub fn version_change_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    change_history::version_change_derive_impl(input)
+    version_change::version_change_derive_impl(input)
 }
 
-#[proc_macro_derive(ApiVersion, attributes(version))]
+#[proc_macro_derive(ApiVersionId, attributes(version))]
 pub fn api_version_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    api_version::api_version_derive_impl(input)
+    api_version_id::api_version_derive_impl(input)
 }

@@ -1,8 +1,8 @@
 use version_core::{
-    ApiVersion, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
+    ApiVersionId, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
 };
 
-#[derive(ApiVersion)]
+#[derive(ApiVersionId)]
 pub enum MyApiVersions {
     #[version("2.0.0")]
     V2_0_0,

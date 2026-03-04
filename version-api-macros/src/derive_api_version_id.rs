@@ -23,9 +23,14 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
         }
     };
 
-    let mut variant_idents = Vec::new();
-    let mut version_strings = Vec::new();
+    let mut variant_idents = Vec::with_capacity(data.variants.len());
+    let mut version_strings = Vec::with_capacity(data.variants.len());
+    let mut versions = Vec::with_capacity(data.variants.len());
 
+    struct VersionInfo {
+        raw_value: LitStr,
+        version_id: version_id::VersionId,
+    }
     for variant in &data.variants {
         if !variant.fields.is_empty() {
             return Err(syn::Error::new(
@@ -46,20 +51,29 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
             })?
             .parse_args::<LitStr>()?;
 
+        version_strings.push(version_lit.clone());
+
+        let version_id = version_id::VersionId::try_from(version_lit.value()).map_err(|e| {
+            syn::Error::new(variant.ident.span(), format!("invalid version: {}", e))
+        })?;
+
         variant_idents.push(&variant.ident);
-        version_strings.push(version_lit);
+        versions.push(VersionInfo {
+            raw_value: version_lit,
+            version_id,
+        });
     }
 
-    for window in version_strings.windows(2) {
-        let from_version = version_id::VersionId::from(window[0].value());
-        let to_version = version_id::VersionId::from(window[1].value());
-        if from_version <= to_version {
+    for window in versions.windows(2) {
+        let from_version = &window[0];
+        let to_version = &window[1];
+        if from_version.version_id <= to_version.version_id {
             return Err(syn::Error::new(
-                window[1].span(),
+                to_version.raw_value.span(),
                 format!(
                     "versions must be listed newest-first; \"{}\" is not older than \"{}\"",
-                    window[1].value(),
-                    window[0].value(),
+                    to_version.raw_value.value(),
+                    from_version.raw_value.value(),
                 ),
             ));
         }
@@ -71,9 +85,18 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
                 #(#enum_name::#variant_idents),*
             ];
 
-            pub fn as_str(&self) -> &'static str {
+            pub fn as_str(&self) -> &str {
                 match self {
                     #(#enum_name::#variant_idents => #version_strings),*
+                }
+            }
+
+            fn as_version_id(&self) -> version_id::VersionId {
+                match self {
+                    #(#enum_name::#variant_idents => {
+                        version_id::VersionId::try_from(#version_strings)
+                            .expect("already validated at compile time")
+                    }),*
                 }
             }
         }
@@ -87,7 +110,7 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
 
         impl ::std::convert::From<#enum_name> for version_id::VersionId {
             fn from(v: #enum_name) -> Self {
-                version_id::VersionId::from(v.as_str())
+                v.as_version_id().clone()
             }
         }
 

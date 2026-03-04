@@ -20,7 +20,6 @@ impl ApiResponseResourceRegistry {
         pinned_api_version: impl Into<VersionId>,
     ) -> Result<Box<dyn std::any::Any>, Box<dyn std::error::Error>> {
         let pinned_api_version = pinned_api_version.into();
-
         let resource_type_id = response_body.type_id();
         let mut response_body = Box::new(response_body) as Box<dyn std::any::Any>;
         if let Some(resource_version_changes) = self.versions.get(&resource_type_id) {

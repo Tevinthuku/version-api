@@ -95,16 +95,16 @@ mod tests {
         };
 
         registry.register(Version {
-            id: VersionId::from("1.0.0"),
+            id: VersionId::try_from("1.0.0").unwrap(),
             changes: vec![Box::new(CollapseAddressesToAddress)],
         });
         registry.register(Version {
-            id: VersionId::from("2.0.0"),
+            id: VersionId::try_from("2.0.0").unwrap(),
             changes: vec![Box::new(CollapseAddressesToListOfStr)],
         });
 
         let transformed = registry
-            .transform(user_2, VersionId::from("0.9.0"))
+            .transform(user_2, VersionId::try_from("0.9.0").unwrap())
             .expect("Transformation failed");
 
         let user_1 = transformed.downcast::<UserWithSingleAddress>().unwrap();
@@ -117,11 +117,11 @@ mod tests {
         let mut registry = ApiResponseResourceRegistry::default();
 
         registry.register(Version {
-            id: VersionId::from("1.0.0"),
+            id: VersionId::try_from("1.0.0").unwrap(),
             changes: vec![Box::new(CollapseAddressesToAddress)],
         });
         registry.register(Version {
-            id: VersionId::from("2.0.0"),
+            id: VersionId::try_from("2.0.0").unwrap(),
             changes: vec![Box::new(CollapseAddressesToListOfStr)],
         });
 
@@ -133,7 +133,7 @@ mod tests {
         };
 
         let transformed = registry
-            .transform(user, VersionId::from("2.0.0"))
+            .transform(user, VersionId::try_from("2.0.0").unwrap())
             .expect("Transformation failed");
         let latest = transformed.downcast::<User>().unwrap();
         assert_eq!(latest.addresses.len(), 1);

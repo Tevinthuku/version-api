@@ -12,7 +12,6 @@ pub fn api_version_derive_impl(input: TokenStream) -> TokenStream {
 
 fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let enum_name = &input.ident;
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
     let data = match &input.data {
         syn::Data::Enum(data) => data,
@@ -65,7 +64,7 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
     }
 
     Ok(quote! {
-        impl #impl_generics #enum_name #ty_generics #where_clause {
+        impl #enum_name {
             pub const ALL: &[#enum_name] = &[
                 #(#enum_name::#variant_idents),*
             ];
@@ -78,19 +77,19 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
         }
 
 
-        impl #impl_generics ::std::fmt::Display for #enum_name #ty_generics #where_clause {
+        impl ::std::fmt::Display for #enum_name {
             fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                 f.write_str(self.as_str())
             }
         }
 
-        impl #impl_generics ::std::convert::From<#enum_name #ty_generics> for version_core::version::VersionId {
-            fn from(v: #enum_name #ty_generics) -> Self {
+        impl ::std::convert::From<#enum_name> for version_core::version::VersionId {
+            fn from(v: #enum_name) -> Self {
                 version_core::version::VersionId::from(v.as_str())
             }
         }
 
-        impl #impl_generics ::std::str::FromStr for #enum_name #ty_generics #where_clause {
+        impl ::std::str::FromStr for #enum_name {
             type Err = ::std::string::String;
 
             fn from_str(s: &str) -> ::std::result::Result<Self, Self::Err> {

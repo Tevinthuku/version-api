@@ -9,4 +9,5 @@ proc-macro = true
 [dependencies]
 syn = { version = "2", features = ["full", "extra-traits"] }
 quote = "1"
+version-id = { path = "../version-id" }
 proc-macro2 = "1"

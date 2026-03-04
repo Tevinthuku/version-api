@@ -103,7 +103,7 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
         impl version_core::version::ChangeHistory for #change_history_type {
             type Head = #head;
 
-            fn version_ids() -> ::std::vec::Vec<version_core::version::VersionId> {
+            fn version_ids() -> ::std::vec::Vec<version_id::VersionId> {
                 ::std::vec![#(#version_ids),*]
             }
 
@@ -122,7 +122,7 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
         }
 
         impl #change_history_type {
-            pub fn version_ids() -> ::std::vec::Vec<version_core::version::VersionId> {
+            pub fn version_ids() -> ::std::vec::Vec<version_id::VersionId> {
                 <Self as version_core::version::ChangeHistory>::version_ids()
             }
 

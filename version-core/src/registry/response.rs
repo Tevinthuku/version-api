@@ -1,6 +1,7 @@
-use crate::version::{ErasedVersionChangeTransformer, Version, VersionId};
+use crate::version::{ErasedVersionChangeTransformer, Version};
 use itertools::Itertools;
 use std::{any::TypeId, collections::HashMap};
+use version_id::VersionId;
 
 #[derive(Default)]
 pub struct ApiResponseResourceRegistry {

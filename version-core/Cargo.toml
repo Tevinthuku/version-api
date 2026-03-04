@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 itertools = "0.14.0"
 version-api-macros = { path = "../version-api-macros" }
+version-id = { path = "../version-id" }

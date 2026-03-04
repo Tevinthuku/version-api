@@ -4,6 +4,8 @@ use version_core::{
 
 #[derive(ApiVersionId)]
 pub enum MyApiVersions {
+    #[version("10.0.0")]
+    V10_0_0,
     #[version("2.0.0")]
     V2_0_0,
     #[version("1.0.0")]

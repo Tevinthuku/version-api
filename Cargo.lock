@@ -36,6 +36,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "semver"
+version = "1.0.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
+
+[[package]]
 name = "syn"
 version = "2.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -59,6 +65,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+ "version-id",
 ]
 
 [[package]]
@@ -67,4 +74,12 @@ version = "0.1.0"
 dependencies = [
  "itertools",
  "version-api-macros",
+ "version-id",
+]
+
+[[package]]
+name = "version-id"
+version = "0.1.0"
+dependencies = [
+ "semver",
 ]

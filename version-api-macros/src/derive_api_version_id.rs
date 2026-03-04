@@ -51,7 +51,9 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
     }
 
     for window in version_strings.windows(2) {
-        if window[0].value() <= window[1].value() {
+        let from_version = version_id::VersionId::from(window[0].value());
+        let to_version = version_id::VersionId::from(window[1].value());
+        if from_version <= to_version {
             return Err(syn::Error::new(
                 window[1].span(),
                 format!(
@@ -83,9 +85,9 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
             }
         }
 
-        impl ::std::convert::From<#enum_name> for version_core::version::VersionId {
+        impl ::std::convert::From<#enum_name> for version_id::VersionId {
             fn from(v: #enum_name) -> Self {
-                version_core::version::VersionId::from(v.as_str())
+                version_id::VersionId::from(v.as_str())
             }
         }
 

@@ -8,8 +8,9 @@ mod tests {
 
     use crate::{
         registry::response::ApiResponseResourceRegistry,
-        version::{Version, VersionChangeTransformer, VersionId},
+        version::{Version, VersionChangeTransformer},
     };
+    use version_id::VersionId;
 
     struct UserWithSingleAddress {
         #[allow(dead_code)]

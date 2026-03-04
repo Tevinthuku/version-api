@@ -22,8 +22,8 @@ fn version_change_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
 
     Ok(quote! {
         impl version_core::version::VersionChange for #ty {
-            fn below_version() -> version_core::version::VersionId {
-                ::std::convert::Into::<version_core::version::VersionId>::into(#below)
+            fn below_version() -> version_id::VersionId {
+                ::std::convert::Into::<version_id::VersionId>::into(#below)
             }
 
             fn description() -> &'static str {

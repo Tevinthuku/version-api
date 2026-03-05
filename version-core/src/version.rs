@@ -22,7 +22,6 @@ pub struct Version {
 }
 
 pub trait VersionChange {
-    fn below_version() -> VersionId;
     fn description() -> &'static str;
 }
 

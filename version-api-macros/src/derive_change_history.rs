@@ -1,7 +1,12 @@
 use proc_macro::TokenStream;
+use proc_macro2::Ident;
 use quote::{ToTokens, format_ident, quote};
-use syn::punctuated::Punctuated;
 use syn::{Attribute, DeriveInput, Token, Type, parse_macro_input};
+use syn::{
+    Expr,
+    parse::{Parse, ParseStream},
+    punctuated::Punctuated,
+};
 
 pub fn change_history_derive_impl(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -22,15 +27,23 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
         ));
     }
 
+    let changes_types = changes
+        .iter()
+        .map(|data| data.the_type.clone())
+        .collect::<Vec<_>>();
+
     let mut chain: Vec<Type> = Vec::with_capacity(changes.len() + 1);
     chain.push(head.clone());
-    chain.extend(changes.iter().cloned());
+    chain.extend(changes_types.iter().cloned());
 
     let mut transformer_structs = Vec::new();
     let mut transformer_impls = Vec::new();
     let mut register_entries = Vec::new();
 
-    for window in chain.windows(2) {
+    for (window, version) in chain
+        .windows(2)
+        .zip(changes.iter().map(|data| data.version.clone()))
+    {
         let from_type = &window[0];
         let to_type = &window[1];
 
@@ -77,15 +90,18 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
 
         register_entries.push(quote! {
             registry.register(version_core::version::Version {
-                id: <#to_type as version_core::version::VersionChange>::below_version(),
+                id: ::std::convert::Into::<version_id::VersionId>::into(#version),
                 changes: vec![::std::boxed::Box::new(#transformer_name)],
             });
         });
     }
 
-    let version_ids = changes.iter().map(|ty| {
-        quote! { <#ty as version_core::version::VersionChange>::below_version() }
-    });
+    let version_ids = changes
+        .iter()
+        .map(|data| data.version.clone())
+        .map(|version| {
+            quote! { ::std::convert::Into::<version_id::VersionId>::into(#version) }
+        });
 
     let mut from_assertions = Vec::new();
     for window in chain.windows(2) {
@@ -148,14 +164,32 @@ fn parse_head_attr(attrs: &[Attribute]) -> syn::Result<Type> {
     head_attr.parse_args::<Type>()
 }
 
-fn parse_changes_attr(attrs: &[Attribute]) -> syn::Result<Vec<Type>> {
+struct ChangesArg {
+    version: Expr,  // eg: MyApiVersions::V1_0_0
+    the_type: Type, // eg: CollapseUserAddressesToStrings
+}
+
+impl Parse for ChangesArg {
+    // we are parsing the following structure: below(MyApiVersions::V1_0_0) => CollapseUserAddressesToStrings
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let _below_keyword: Ident = input.parse()?;
+        let content;
+        syn::parenthesized!(content in input);
+        let version: Expr = content.parse()?;
+        input.parse::<Token![=>]>()?;
+        let the_type: Type = input.parse()?;
+        Ok(ChangesArg { version, the_type })
+    }
+}
+
+fn parse_changes_attr(attrs: &[Attribute]) -> syn::Result<Vec<ChangesArg>> {
     let changes_attr = attrs
         .iter()
         .find(|a| a.path().is_ident("changes"))
         .ok_or_else(|| {
             syn::Error::new(proc_macro2::Span::call_site(), "missing #[changes(...)]")
         })?;
-    let changes: Punctuated<Type, Token![,]> =
-        changes_attr.parse_args_with(Punctuated::<Type, Token![,]>::parse_terminated)?;
-    Ok(changes.into_iter().collect())
+    let args: Punctuated<ChangesArg, Token![,]> =
+        changes_attr.parse_args_with(Punctuated::<ChangesArg, Token![,]>::parse_terminated)?;
+    Ok(args.into_iter().collect())
 }

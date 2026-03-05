@@ -26,7 +26,6 @@ struct User {
 }
 
 #[derive(Debug, VersionChange)]
-#[version(below = MyApiVersions::V1_0_0)]
 #[description = "Legacy users expect one address string"]
 #[allow(dead_code)]
 struct CollapseUserAddressToSingleString {
@@ -35,7 +34,6 @@ struct CollapseUserAddressToSingleString {
 }
 
 #[derive(Debug, VersionChange)]
-#[version(below = MyApiVersions::V2_0_0)]
 #[description = "Users before 2.0.0 expect addresses as plain strings"]
 struct CollapseUserAddressesToStrings {
     name: String,
@@ -63,7 +61,10 @@ impl From<CollapseUserAddressesToStrings> for CollapseUserAddressToSingleString 
 
 #[derive(ChangeHistory)]
 #[head(User)]
-#[changes(CollapseUserAddressesToStrings, CollapseUserAddressToSingleString)]
+#[changes(
+    below(MyApiVersions::V1_0_0) => CollapseUserAddressesToStrings,
+    below(MyApiVersions::V2_0_0) => CollapseUserAddressToSingleString,
+)]
 struct UserResponseHistoryVersions;
 
 fn main() {

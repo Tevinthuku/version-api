@@ -62,14 +62,14 @@ impl From<CollapseUserAddressesToStrings> for CollapseUserAddressToSingleString 
 #[derive(ChangeHistory)]
 #[head(User)]
 #[changes(
-    below(MyApiVersions::V1_0_0) => CollapseUserAddressesToStrings,
-    below(MyApiVersions::V2_0_0) => CollapseUserAddressToSingleString,
+    below(MyApiVersions::V2_0_0) => CollapseUserAddressesToStrings,
+    below(MyApiVersions::V1_0_0) => CollapseUserAddressToSingleString,
 )]
 struct UserResponseHistoryVersions;
 
 fn main() {
     let mut registry = ApiResponseResourceRegistry::default();
-    UserResponseHistoryVersions::register(&mut registry);
+    UserResponseHistoryVersions::register(&mut registry).unwrap();
 
     let user = User {
         name: "John Doe".to_string(),

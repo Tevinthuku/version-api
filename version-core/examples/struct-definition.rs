@@ -53,7 +53,7 @@ impl From<CollapseUserAddressesToStrings> for CollapseUserAddressToSingleString 
     fn from(user: CollapseUserAddressesToStrings) -> Self {
         Self {
             name: user.name,
-            // the users on less than v1 expect a single address, so its fine to just take the first one
+            // the users on less than v1 expect a single address, so it's fine to just take the first one
             address: user.addresses.first().cloned().unwrap_or_default(),
         }
     }

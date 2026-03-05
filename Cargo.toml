@@ -1,4 +1,6 @@
 [workspace]
-members = ["core"]
+members = ["version-core", "version-api-macros", "version-id"]
 
 resolver = "3"
+
+[workspace.dependencies]

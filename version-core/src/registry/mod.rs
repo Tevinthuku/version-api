@@ -1,13 +1,16 @@
 mod response;
 
+pub use response::ApiResponseResourceRegistry;
+
 #[cfg(test)]
 mod tests {
     use std::any::TypeId;
 
     use crate::{
         registry::response::ApiResponseResourceRegistry,
-        version::{Version, VersionChangeSetTransformer, VersionId},
+        version::{Version, VersionChangeTransformer},
     };
+    use version_id::VersionId;
 
     struct UserWithSingleAddress {
         #[allow(dead_code)]
@@ -30,7 +33,7 @@ mod tests {
 
     struct CollapseAddressesToAddress;
 
-    impl VersionChangeSetTransformer for CollapseAddressesToAddress {
+    impl VersionChangeTransformer for CollapseAddressesToAddress {
         type Input = UserWithMultipleStringAddresses;
         type Output = UserWithSingleAddress;
 
@@ -54,7 +57,7 @@ mod tests {
 
     struct CollapseAddressesToListOfStr;
 
-    impl VersionChangeSetTransformer for CollapseAddressesToListOfStr {
+    impl VersionChangeTransformer for CollapseAddressesToListOfStr {
         type Input = User;
         type Output = UserWithMultipleStringAddresses;
 
@@ -81,7 +84,7 @@ mod tests {
     }
 
     #[test]
-    fn test_transformation_works() {
+    fn test_transformation_works_for_legacy_version() {
         let mut registry = ApiResponseResourceRegistry::default();
 
         let user_2 = User {
@@ -92,22 +95,49 @@ mod tests {
         };
 
         registry.register(Version {
-            id: VersionId::from("v1"),
+            id: VersionId::try_from("1.0.0").unwrap(),
             changes: vec![Box::new(CollapseAddressesToAddress)],
         });
         registry.register(Version {
-            id: VersionId::from("v2"),
+            id: VersionId::try_from("2.0.0").unwrap(),
             changes: vec![Box::new(CollapseAddressesToListOfStr)],
         });
 
         let transformed = registry
-            .transform(user_2, VersionId::from("v1"))
+            .transform(user_2, VersionId::try_from("0.9.0").unwrap())
             .expect("Transformation failed");
 
-        let user_1 = transformed
-            .downcast::<UserWithMultipleStringAddresses>()
-            .unwrap();
+        let user_1 = transformed.downcast::<UserWithSingleAddress>().unwrap();
 
-        assert_eq!(user_1.addresses, vec!["123 Main St USA".to_string()]);
+        assert_eq!(user_1.address, "123 Main St USA".to_string());
+    }
+
+    #[test]
+    fn test_latest_version_returns_head_unchanged() {
+        let mut registry = ApiResponseResourceRegistry::default();
+
+        registry.register(Version {
+            id: VersionId::try_from("1.0.0").unwrap(),
+            changes: vec![Box::new(CollapseAddressesToAddress)],
+        });
+        registry.register(Version {
+            id: VersionId::try_from("2.0.0").unwrap(),
+            changes: vec![Box::new(CollapseAddressesToListOfStr)],
+        });
+
+        let user = User {
+            addresses: vec![Address {
+                location: "123 Main St".to_string(),
+                country: Some("USA".to_string()),
+            }],
+        };
+
+        let transformed = registry
+            .transform(user, VersionId::try_from("2.0.0").unwrap())
+            .expect("Transformation failed");
+        let latest = transformed.downcast::<User>().unwrap();
+        assert_eq!(latest.addresses.len(), 1);
+        assert_eq!(latest.addresses[0].location, "123 Main St");
+        assert_eq!(latest.addresses[0].country.as_deref(), Some("USA"));
     }
 }

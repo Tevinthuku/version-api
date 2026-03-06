@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use crate::version::{ErasedVersionChangeTransformer, Version};
 use itertools::Itertools;
 use std::{any::TypeId, collections::HashMap};
@@ -16,12 +17,13 @@ struct ApiResourceVersionChanges {
 impl ApiResponseResourceRegistry {
     pub fn transform(
         &self,
-        response_body: impl std::any::Any,
+        response_body: impl std::any::Any + serde::Serialize,
         pinned_api_version: impl Into<VersionId>,
-    ) -> Result<Box<dyn std::any::Any>, Box<dyn std::error::Error>> {
+    ) -> Result<Bytes, Box<dyn std::error::Error>> {
         let pinned_api_version = pinned_api_version.into();
         let resource_type_id = response_body.type_id();
-        let mut response_body = Box::new(response_body) as Box<dyn std::any::Any>;
+        let serialized = serde_json::to_vec(&response_body)?;
+        let mut bytes = Bytes::from(serialized);
         if let Some(resource_version_changes) = self.versions.get(&resource_type_id) {
             let transformers = resource_version_changes
                 .data
@@ -32,10 +34,10 @@ impl ApiResponseResourceRegistry {
                 .take_while(|(version, _)| &pinned_api_version < *version);
 
             for (_, transformer) in transformers {
-                response_body = transformer.transform(response_body)?;
+                bytes = transformer.transform(bytes)?;
             }
         }
-        Ok(response_body)
+        Ok(bytes)
     }
 
     pub fn register(&mut self, version: Version) {

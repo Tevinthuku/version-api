@@ -12,21 +12,24 @@ mod tests {
     };
     use version_id::VersionId;
 
+    #[derive(serde::Serialize, serde::Deserialize)]
     struct UserWithSingleAddress {
         #[allow(dead_code)]
         address: String,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, serde::Serialize, serde::Deserialize)]
     struct UserWithMultipleStringAddresses {
         addresses: Vec<String>,
     }
 
+    #[derive(serde::Serialize, serde::Deserialize)]
     struct Address {
         location: String,
         country: Option<String>,
     }
 
+    #[derive(serde::Serialize, serde::Deserialize)]
     struct User {
         addresses: Vec<Address>,
     }
@@ -103,11 +106,11 @@ mod tests {
             changes: vec![Box::new(CollapseAddressesToListOfStr)],
         });
 
-        let transformed = registry
+        let bytes = registry
             .transform(user_2, VersionId::try_from("0.9.0").unwrap())
             .expect("Transformation failed");
 
-        let user_1 = transformed.downcast::<UserWithSingleAddress>().unwrap();
+        let user_1: UserWithSingleAddress = serde_json::from_slice(&bytes).unwrap();
 
         assert_eq!(user_1.address, "123 Main St USA".to_string());
     }
@@ -132,10 +135,10 @@ mod tests {
             }],
         };
 
-        let transformed = registry
+        let bytes = registry
             .transform(user, VersionId::try_from("2.0.0").unwrap())
             .expect("Transformation failed");
-        let latest = transformed.downcast::<User>().unwrap();
+        let latest: User = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(latest.addresses.len(), 1);
         assert_eq!(latest.addresses[0].location, "123 Main St");
         assert_eq!(latest.addresses[0].country.as_deref(), Some("USA"));

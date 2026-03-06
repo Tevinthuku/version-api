@@ -9,3 +9,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 version-core = { path = "../version-core" }
 version-id = { path = "../version-id" }
+
+[dev-dependencies]
+actix-rt = "2"
+version-api-macros = { path = "../version-api-macros" }

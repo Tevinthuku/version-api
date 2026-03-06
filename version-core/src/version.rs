@@ -9,7 +9,7 @@ use version_id::VersionId;
 // in one heterogeneous collection. This trait erases those concrete types by
 // accepting/returning `Bytes`, allowing us to keep all transformers in
 // the same registry map and invoke them dynamically at runtime.
-pub trait ErasedVersionChangeTransformer {
+pub trait ErasedVersionChangeTransformer: Send + Sync {
     fn head_version(&self) -> TypeId;
     fn transform(&self, value: Bytes) -> Result<Bytes, Box<dyn std::error::Error>>;
 }
@@ -40,7 +40,7 @@ pub trait VersionChangeTransformer {
     fn transform(&self, value: Self::Input) -> Result<Self::Output, Box<dyn std::error::Error>>;
 }
 
-impl<T> ErasedVersionChangeTransformer for T
+impl<T: Send + Sync> ErasedVersionChangeTransformer for T
 where
     T: VersionChangeTransformer + 'static,
     T::Input: serde::de::DeserializeOwned,

@@ -1,11 +1,12 @@
-use bytes::Bytes;
 use crate::version::{ErasedVersionChangeTransformer, Version};
+use bytes::Bytes;
 use itertools::Itertools;
 use std::{any::TypeId, collections::HashMap};
 use version_id::VersionId;
 
 #[derive(Default)]
 pub struct ApiResponseResourceRegistry {
+    header_name: String,
     versions: HashMap<TypeId, ApiResourceVersionChanges>,
 }
 
@@ -15,6 +16,12 @@ struct ApiResourceVersionChanges {
 }
 
 impl ApiResponseResourceRegistry {
+    pub fn new(header_name: String) -> Self {
+        Self {
+            header_name,
+            versions: HashMap::new(),
+        }
+    }
     pub fn transform(
         &self,
         response_body: impl std::any::Any + serde::Serialize,
@@ -50,5 +57,9 @@ impl ApiResponseResourceRegistry {
                 .data
                 .insert(version_change.clone(), change);
         }
+    }
+
+    pub fn header_name(&self) -> &str {
+        &self.header_name
     }
 }

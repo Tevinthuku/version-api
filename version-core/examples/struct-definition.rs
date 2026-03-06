@@ -14,18 +14,18 @@ pub enum MyApiVersions {
     V0_9_0,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct Address {
     location: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct User {
     name: String,
     addresses: Vec<Address>,
 }
 
-#[derive(Debug, VersionChange)]
+#[derive(Debug, VersionChange, serde::Serialize, serde::Deserialize)]
 #[description = "Legacy users expect one address string"]
 #[allow(dead_code)]
 struct CollapseUserAddressToSingleString {
@@ -33,7 +33,7 @@ struct CollapseUserAddressToSingleString {
     address: String,
 }
 
-#[derive(Debug, VersionChange)]
+#[derive(Debug, VersionChange, serde::Serialize, serde::Deserialize)]
 #[description = "Users before 2.0.0 expect addresses as plain strings"]
 struct CollapseUserAddressesToStrings {
     name: String,
@@ -83,22 +83,20 @@ fn main() {
         ],
     };
 
-    let transformed = registry
+    let bytes = registry
         .transform(user.clone(), MyApiVersions::V1_0_0)
         .unwrap();
-    let user_with_string_addresses = transformed
-        .downcast::<CollapseUserAddressesToStrings>()
-        .unwrap();
+    let user_with_string_addresses: CollapseUserAddressesToStrings =
+        serde_json::from_slice(&bytes).unwrap();
     assert_eq!(
         user_with_string_addresses.addresses,
         vec!["123 Main St", "456 Main St"]
     );
 
-    let transformed = registry
+    let bytes = registry
         .transform(user.clone(), MyApiVersions::V0_9_0)
         .unwrap();
-    let user_with_single_address = transformed
-        .downcast::<CollapseUserAddressToSingleString>()
-        .unwrap();
+    let user_with_single_address: CollapseUserAddressToSingleString =
+        serde_json::from_slice(&bytes).unwrap();
     assert_eq!(user_with_single_address.address, "123 Main St".to_string());
 }

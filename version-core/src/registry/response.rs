@@ -1,10 +1,12 @@
 use crate::version::{ErasedVersionChangeTransformer, Version};
+use bytes::Bytes;
 use itertools::Itertools;
 use std::{any::TypeId, collections::HashMap};
 use version_id::VersionId;
 
 #[derive(Default)]
 pub struct ApiResponseResourceRegistry {
+    header_name: String,
     versions: HashMap<TypeId, ApiResourceVersionChanges>,
 }
 
@@ -14,14 +16,21 @@ struct ApiResourceVersionChanges {
 }
 
 impl ApiResponseResourceRegistry {
+    pub fn new(header_name: String) -> Self {
+        Self {
+            header_name,
+            versions: HashMap::new(),
+        }
+    }
     pub fn transform(
         &self,
-        response_body: impl std::any::Any,
+        response_body: impl std::any::Any + serde::Serialize,
         pinned_api_version: impl Into<VersionId>,
-    ) -> Result<Box<dyn std::any::Any>, Box<dyn std::error::Error>> {
+    ) -> Result<Bytes, Box<dyn std::error::Error>> {
         let pinned_api_version = pinned_api_version.into();
         let resource_type_id = response_body.type_id();
-        let mut response_body = Box::new(response_body) as Box<dyn std::any::Any>;
+        let serialized = serde_json::to_vec(&response_body)?;
+        let mut bytes = Bytes::from(serialized);
         if let Some(resource_version_changes) = self.versions.get(&resource_type_id) {
             let transformers = resource_version_changes
                 .data
@@ -32,10 +41,10 @@ impl ApiResponseResourceRegistry {
                 .take_while(|(version, _)| &pinned_api_version < *version);
 
             for (_, transformer) in transformers {
-                response_body = transformer.transform(response_body)?;
+                bytes = transformer.transform(bytes)?;
             }
         }
-        Ok(response_body)
+        Ok(bytes)
     }
 
     pub fn register(&mut self, version: Version) {
@@ -48,5 +57,9 @@ impl ApiResponseResourceRegistry {
                 .data
                 .insert(version_change.clone(), change);
         }
+    }
+
+    pub fn header_name(&self) -> &str {
+        &self.header_name
     }
 }

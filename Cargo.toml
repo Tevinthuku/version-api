@@ -1,5 +1,5 @@
 [workspace]
-members = ["version-core", "version-api-macros", "version-id"]
+members = ["version-core", "version-api-macros", "version-id", "version-actix"]
 
 resolver = "3"
 

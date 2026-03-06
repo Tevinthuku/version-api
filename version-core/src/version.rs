@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use std::any::{Any, TypeId};
 use version_id::VersionId;
 
@@ -6,14 +7,11 @@ use version_id::VersionId;
 // `VersionChangeTransformer` has associated types (`Input`/`Output`), so each
 // implementation has a different concrete type and can't be stored directly
 // in one heterogeneous collection. This trait erases those concrete types by
-// accepting/returning `Box<dyn Any>`, allowing us to keep all transformers in
+// accepting/returning `Bytes`, allowing us to keep all transformers in
 // the same registry map and invoke them dynamically at runtime.
-pub trait ErasedVersionChangeTransformer {
+pub trait ErasedVersionChangeTransformer: Send + Sync {
     fn head_version(&self) -> TypeId;
-    fn transform(
-        &self,
-        value: Box<dyn std::any::Any>,
-    ) -> Result<Box<dyn std::any::Any>, Box<dyn std::error::Error>>;
+    fn transform(&self, value: Bytes) -> Result<Bytes, Box<dyn std::error::Error>>;
 }
 
 pub struct Version {
@@ -42,25 +40,20 @@ pub trait VersionChangeTransformer {
     fn transform(&self, value: Self::Input) -> Result<Self::Output, Box<dyn std::error::Error>>;
 }
 
-impl<T> ErasedVersionChangeTransformer for T
+impl<T: Send + Sync> ErasedVersionChangeTransformer for T
 where
     T: VersionChangeTransformer + 'static,
+    T::Input: serde::de::DeserializeOwned,
+    T::Output: serde::Serialize,
 {
     fn head_version(&self) -> TypeId {
         VersionChangeTransformer::head_version(self)
     }
 
-    fn transform(
-        &self,
-        value: Box<dyn std::any::Any>,
-    ) -> Result<Box<dyn std::any::Any>, Box<dyn std::error::Error>> {
-        let input = value.downcast::<T::Input>().map_err(|_| {
-            Box::<dyn std::error::Error>::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Failed to downcast input value",
-            ))
-        })?;
-        let output = VersionChangeTransformer::transform(self, *input)?;
-        Ok(Box::new(output))
+    fn transform(&self, value: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
+        let input: T::Input = serde_json::from_slice(&value)?;
+        let output = VersionChangeTransformer::transform(self, input)?;
+        let serialized = serde_json::to_vec(&output)?;
+        Ok(Bytes::from(serialized))
     }
 }

@@ -1,36 +1,43 @@
 use version_id::{VersionId, VersionIdValidator};
 
-pub struct ActixVersionIdExtractor {
-    extractor_type: ActixVersionIdExtractorType,
+pub struct BaseActixVersionIdExtractor {
+    extractor_type: BaseActixVersionIdExtractorType,
     version_validator: Box<dyn VersionIdValidator>,
 }
 
-enum ActixVersionIdExtractorType {
+enum BaseActixVersionIdExtractorType {
     Header { header_name: String },
 }
 
-impl ActixVersionIdExtractorType {
+impl BaseActixVersionIdExtractorType {
     fn attribute_name(&self) -> &str {
         match self {
-            ActixVersionIdExtractorType::Header { header_name } => header_name,
+            BaseActixVersionIdExtractorType::Header { header_name } => header_name,
         }
     }
 }
 
-impl ActixVersionIdExtractor {
+impl BaseActixVersionIdExtractor {
     pub fn header_extractor(
         header_name: String,
         version_validator: Box<dyn VersionIdValidator + 'static>,
-    ) -> Self {
-        Self {
-            extractor_type: ActixVersionIdExtractorType::Header { header_name },
+    ) -> Box<dyn ActixVersionIdExtractor> {
+        Box::new(Self {
+            extractor_type: BaseActixVersionIdExtractorType::Header { header_name },
             version_validator,
-        }
+        })
     }
 }
 
-impl ActixVersionIdExtractor {
-    pub fn extract(
+pub trait ActixVersionIdExtractor: Send + Sync {
+    fn extract(
+        &self,
+        req: &actix_web::HttpRequest,
+    ) -> Result<Option<VersionId>, Box<dyn std::error::Error>>;
+}
+
+impl ActixVersionIdExtractor for BaseActixVersionIdExtractor {
+    fn extract(
         &self,
         req: &actix_web::HttpRequest,
     ) -> Result<Option<VersionId>, Box<dyn std::error::Error>> {

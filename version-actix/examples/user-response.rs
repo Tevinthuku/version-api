@@ -1,7 +1,7 @@
 use actix_web::{Result, get, web};
 use serde::Deserialize;
 use serde::Serialize;
-use version_actix::{ActixVersionIdExtractor, VersionedJsonResponder};
+use version_actix::{BaseActixVersionIdExtractor, VersionedJsonResponder};
 use version_core::{
     ApiVersionId, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
 };
@@ -27,10 +27,10 @@ async fn main() -> std::io::Result<()> {
 
     let mut registry = ApiResponseResourceRegistry::new();
     CurrentUserResponseHistoryVersions::register(&mut registry).unwrap();
-    let version_id_extractor = ActixVersionIdExtractor::header_extractor(
+    let version_id_extractor = web::Data::new(BaseActixVersionIdExtractor::header_extractor(
         "X-API-Version".to_string(),
         ApiVersion::validator(),
-    );
+    ));
 
     let registry = web::Data::new(registry);
     let version_id_extractor = web::Data::new(version_id_extractor);

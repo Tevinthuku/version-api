@@ -25,7 +25,8 @@ impl<T: Serialize + 'static> VersionedJsonResponder<T> {
         req: &actix_web::HttpRequest,
     ) -> Result<HttpResponse<EitherBody<BoxBody>>, Box<dyn std::error::Error>> {
         let registry = req.app_data::<web::Data<ApiResponseResourceRegistry>>();
-        let version_id_extractor = req.app_data::<web::Data<ActixVersionIdExtractor>>();
+        let version_id_extractor = req.app_data::<web::Data<Box<dyn ActixVersionIdExtractor>>>();
+
         let body = serde_json::to_vec(&self.0)
             .map_err(|err| Box::new(JsonPayloadError::Serialize(err)))?;
 

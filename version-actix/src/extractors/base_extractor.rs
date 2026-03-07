@@ -2,6 +2,8 @@ use version_id::{VersionId, VersionIdValidator};
 
 use crate::ActixVersionIdExtractor;
 
+// Default extractor for the basic case where clients send an API version ID
+// on every request (for example via a header).
 pub struct BaseActixVersionIdExtractor {
     extractor_type: BaseActixVersionIdExtractorType,
     version_validator: Box<dyn VersionIdValidator>,

@@ -35,7 +35,7 @@ impl TryFrom<String> for VersionId {
     }
 }
 
-pub trait VersionIdExtractor {
+pub trait VersionIdExtractor: Send + Sync {
     type Input: std::any::Any;
 
     fn extract(

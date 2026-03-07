@@ -5,6 +5,8 @@ use version_core::{
     ApiVersionId, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
 };
 
+use version_actix::VersionIdHeaderExtractor;
+
 #[derive(Serialize, Deserialize)]
 struct CurrentUser {
     first_name: String,
@@ -51,7 +53,9 @@ async fn user_endpoint(name: web::Path<String>) -> Result<VersionedJsonResponder
 }
 
 fn build_app_config(cfg: &mut web::ServiceConfig) {
-    let mut registry = ApiResponseResourceRegistry::new("X-API-Version".to_string());
+    let mut registry = ApiResponseResourceRegistry::new(VersionIdHeaderExtractor::new(
+        "X-API-Version".to_string(),
+    ));
     CurrentUserResponseHistoryVersions::register(&mut registry).unwrap();
     cfg.app_data(web::Data::new(registry))
         .service(user_endpoint);

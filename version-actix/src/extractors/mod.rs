@@ -1,25 +1,42 @@
-use actix_web::http::header::HeaderMap;
-use version_id::{VersionId, VersionIdExtractor};
+use version_id::{VersionId, VersionIdValidator};
 
-pub struct VersionIdHeaderExtractor {
-    header_name: String,
+pub struct ActixVersionIdExtractor {
+    extractor_type: ActixVersionIdExtractorType,
+    version_validator: Box<dyn VersionIdValidator>,
 }
 
-impl VersionIdHeaderExtractor {
-    pub fn new(header_name: String) -> Self {
-        Self { header_name }
+enum ActixVersionIdExtractorType {
+    Header { header_name: String },
+}
+
+impl ActixVersionIdExtractorType {
+    fn attribute_name(&self) -> &str {
+        match self {
+            ActixVersionIdExtractorType::Header { header_name } => header_name,
+        }
     }
 }
 
-impl VersionIdExtractor for VersionIdHeaderExtractor {
-    type Input = HeaderMap;
+impl ActixVersionIdExtractor {
+    pub fn header_extractor(
+        header_name: String,
+        version_validator: Box<dyn VersionIdValidator + 'static>,
+    ) -> Self {
+        Self {
+            extractor_type: ActixVersionIdExtractorType::Header { header_name },
+            version_validator,
+        }
+    }
+}
 
-    fn extract(
+impl ActixVersionIdExtractor {
+    pub fn extract(
         &self,
-        input: &Self::Input,
-    ) -> Result<Option<VersionId>, Box<dyn std::error::Error + Send + Sync>> {
-        let maybe_raw_version = input
-            .get(&self.header_name)
+        req: &actix_web::HttpRequest,
+    ) -> Result<Option<VersionId>, Box<dyn std::error::Error>> {
+        let headers = req.headers();
+        let maybe_raw_version = headers
+            .get(self.extractor_type.attribute_name())
             .and_then(|v| Some(v.to_str()))
             .transpose()?;
 
@@ -29,7 +46,7 @@ impl VersionIdExtractor for VersionIdHeaderExtractor {
             return Ok(None);
         };
 
-        let version = VersionId::try_from(raw_version).map(Some).map_err(|e| {
+        let version = self.version_validator.validate(raw_version).map_err(|e| {
             // TODO: Fix this error handling
             Box::new(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
@@ -37,6 +54,6 @@ impl VersionIdExtractor for VersionIdHeaderExtractor {
             ))
         })?;
 
-        Ok(version)
+        Ok(Some(version))
     }
 }

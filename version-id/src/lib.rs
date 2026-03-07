@@ -35,11 +35,6 @@ impl TryFrom<String> for VersionId {
     }
 }
 
-pub trait VersionIdExtractor: Send + Sync {
-    type Input: std::any::Any;
-
-    fn extract(
-        &self,
-        input: &Self::Input,
-    ) -> Result<Option<VersionId>, Box<dyn std::error::Error + Send + Sync>>;
+pub trait VersionIdValidator: Send + Sync {
+    fn validate(&self, version_id: &str) -> Result<VersionId, Box<dyn std::error::Error>>;
 }

@@ -1,7 +1,6 @@
 use version_core::{
     ApiVersionId, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
 };
-use version_id::{VersionId, VersionIdExtractor};
 
 #[derive(ApiVersionId)]
 pub enum MyApiVersions {
@@ -68,21 +67,8 @@ impl From<CollapseUserAddressesToStrings> for CollapseUserAddressToSingleString 
 )]
 struct UserResponseHistoryVersions;
 
-struct MirrorVersionIdExtractor;
-
-impl VersionIdExtractor for MirrorVersionIdExtractor {
-    type Input = MyApiVersions;
-
-    fn extract(
-        &self,
-        input: &Self::Input,
-    ) -> Result<Option<VersionId>, Box<dyn std::error::Error + Send + Sync>> {
-        Ok(Some(input.as_version_id()))
-    }
-}
-
 fn main() {
-    let mut registry = ApiResponseResourceRegistry::new(MirrorVersionIdExtractor);
+    let mut registry = ApiResponseResourceRegistry::default();
     UserResponseHistoryVersions::register(&mut registry).unwrap();
 
     let user = User {
@@ -98,7 +84,7 @@ fn main() {
     };
 
     let bytes = registry
-        .transform(user.clone(), &MyApiVersions::V1_0_0)
+        .transform(user.clone(), MyApiVersions::V1_0_0.as_version_id())
         .unwrap();
     let user_with_string_addresses: CollapseUserAddressesToStrings =
         serde_json::from_slice(&bytes).unwrap();
@@ -108,7 +94,7 @@ fn main() {
     );
 
     let bytes = registry
-        .transform(user.clone(), &MyApiVersions::V0_9_0)
+        .transform(user.clone(), MyApiVersions::V0_9_0.as_version_id())
         .unwrap();
     let user_with_single_address: CollapseUserAddressToSingleString =
         serde_json::from_slice(&bytes).unwrap();

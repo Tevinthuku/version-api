@@ -32,6 +32,8 @@ impl<T: Serialize + 'static> VersionedJsonResponder<T> {
             let header_name = registry.header_name();
             let version = try_parse_version_from_header(req.headers(), header_name)?;
 
+            let version = headers.get(header_name)
+
             if let Some(version) = version {
                 transformed_body = registry.transform(self.0, version)?.to_vec();
             }

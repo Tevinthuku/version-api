@@ -26,8 +26,8 @@ pub trait VersionChange {
 pub trait ChangeHistory {
     type Head: Any + 'static;
     fn version_ids() -> Vec<VersionId>;
-    fn register(
-        registry: &mut crate::registry::ApiResponseResourceRegistry,
+    fn register<T>(
+        registry: &mut crate::registry::ApiResponseResourceRegistry<T>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 

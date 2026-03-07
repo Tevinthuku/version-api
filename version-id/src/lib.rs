@@ -34,3 +34,12 @@ impl TryFrom<String> for VersionId {
         Self::try_from(value.as_str())
     }
 }
+
+pub trait VersionIdExtractor {
+    type Input: std::any::Any;
+
+    fn extract(
+        &self,
+        input: &Self::Input,
+    ) -> Result<Option<VersionId>, Box<dyn std::error::Error + Send + Sync>>;
+}

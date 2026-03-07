@@ -84,7 +84,7 @@ fn main() {
     };
 
     let bytes = registry
-        .transform(user.clone(), MyApiVersions::V1_0_0)
+        .transform(user.clone(), MyApiVersions::V1_0_0.as_version_id())
         .unwrap();
     let user_with_string_addresses: CollapseUserAddressesToStrings =
         serde_json::from_slice(&bytes).unwrap();
@@ -94,7 +94,7 @@ fn main() {
     );
 
     let bytes = registry
-        .transform(user.clone(), MyApiVersions::V0_9_0)
+        .transform(user.clone(), MyApiVersions::V0_9_0.as_version_id())
         .unwrap();
     let user_with_single_address: CollapseUserAddressToSingleString =
         serde_json::from_slice(&bytes).unwrap();

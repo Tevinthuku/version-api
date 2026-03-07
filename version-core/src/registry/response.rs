@@ -6,7 +6,6 @@ use version_id::VersionId;
 
 #[derive(Default)]
 pub struct ApiResponseResourceRegistry {
-    header_name: String,
     versions: HashMap<TypeId, ApiResourceVersionChanges>,
 }
 
@@ -16,21 +15,20 @@ struct ApiResourceVersionChanges {
 }
 
 impl ApiResponseResourceRegistry {
-    pub fn new(header_name: String) -> Self {
+    pub fn new() -> Self {
         Self {
-            header_name,
             versions: HashMap::new(),
         }
     }
     pub fn transform(
         &self,
         response_body: impl std::any::Any + serde::Serialize,
-        pinned_api_version: impl Into<VersionId>,
+        api_version: VersionId,
     ) -> Result<Bytes, Box<dyn std::error::Error>> {
-        let pinned_api_version = pinned_api_version.into();
         let resource_type_id = response_body.type_id();
         let serialized = serde_json::to_vec(&response_body)?;
         let mut bytes = Bytes::from(serialized);
+
         if let Some(resource_version_changes) = self.versions.get(&resource_type_id) {
             let transformers = resource_version_changes
                 .data
@@ -38,7 +36,7 @@ impl ApiResponseResourceRegistry {
                 // sorting in descending order, latest versions first
                 .sorted_by(|a, b| b.0.cmp(&a.0))
                 // apply transformations introduced above the pinned version boundary
-                .take_while(|(version, _)| &pinned_api_version < *version);
+                .take_while(|(version, _)| &api_version < *version);
 
             for (_, transformer) in transformers {
                 bytes = transformer.transform(bytes)?;
@@ -57,9 +55,5 @@ impl ApiResponseResourceRegistry {
                 .data
                 .insert(version_change.clone(), change);
         }
-    }
-
-    pub fn header_name(&self) -> &str {
-        &self.header_name
     }
 }

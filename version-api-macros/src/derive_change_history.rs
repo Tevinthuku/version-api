@@ -96,12 +96,9 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
         });
     }
 
-    let version_ids = changes
-        .iter()
-        .map(|data| data.version.clone())
-        .map(|version| {
-            quote! { ::std::convert::Into::<version_id::VersionId>::into(#version) }
-        });
+    let version_ids = changes.into_iter().map(|data| data.version).map(|version| {
+        quote! { ::std::convert::Into::<version_id::VersionId>::into(#version) }
+    });
 
     let mut from_assertions = Vec::new();
     for window in chain.windows(2) {
@@ -125,6 +122,7 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
 
             fn register(registry: &mut version_core::registry::ApiResponseResourceRegistry) -> Result<(), Box<dyn ::std::error::Error>> {
                 let version_ids = Self::version_ids();
+
                 for window in version_ids.windows(2) {
                     if window[0] <= window[1] {
                         return Err(Box::new(

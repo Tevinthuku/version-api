@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{DeriveInput, LitStr, parse_macro_input};
 
 pub fn api_version_derive_impl(input: TokenStream) -> TokenStream {
@@ -79,6 +79,8 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
         }
     }
 
+    let validator_name = format_ident!("{}_VersionIdValidator", enum_name);
+
     Ok(quote! {
         impl #enum_name {
             pub const ALL: &[#enum_name] = &[
@@ -98,6 +100,10 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
                             .expect("already validated at compile time")
                     }),*
                 }
+            }
+
+            fn validator() -> Box<dyn version_id::VersionIdValidator> {
+                Box::new(#validator_name)
             }
         }
 
@@ -126,6 +132,21 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
                 }
             }
         }
+
+            #[doc(hidden)]
+            #[allow(non_camel_case_types)]
+            struct #validator_name;
+
+            impl version_id::VersionIdValidator for #validator_name {
+                fn validate(&self, version_id: &str) -> Result<version_id::VersionId, Box<dyn std::error::Error>> {
+                    version_id::VersionId::try_from(version_id).map_err(|e| -> Box<dyn std::error::Error> {
+                        Box::new(::std::io::Error::new(
+                            ::std::io::ErrorKind::InvalidInput,
+                            e.to_string(),
+                        ))
+                    })
+                }
+            }
 
     })
 }

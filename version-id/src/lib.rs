@@ -34,3 +34,7 @@ impl TryFrom<String> for VersionId {
         Self::try_from(value.as_str())
     }
 }
+
+pub trait VersionIdValidator: Send + Sync {
+    fn validate(&self, version_id: &str) -> Result<VersionId, Box<dyn std::error::Error>>;
+}

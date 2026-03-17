@@ -65,7 +65,7 @@ async fn user_endpoint(name: web::Path<String>) -> Result<VersionedJsonResponder
 let mut registry = ApiResponseResourceRegistry::new();
 CurrentUserResponseHistoryVersions::register(&mut registry).unwrap();
 
-let version_id_extractor = web::Data::new(BaseActixVersionIdExtractor::header_extractor(
+let version_id_extractor = web::Data::from(BaseActixVersionIdExtractor::header_extractor(
     "X-API-Version".to_string(),
     ApiVersion::validator(),
 ));

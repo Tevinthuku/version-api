@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use version_id::{VersionId, VersionIdValidator};
 
 use crate::ActixVersionIdExtractor;
@@ -25,8 +27,8 @@ impl BaseActixVersionIdExtractor {
     pub fn header_extractor(
         header_name: String,
         version_validator: Box<dyn VersionIdValidator + 'static>,
-    ) -> Box<dyn ActixVersionIdExtractor> {
-        Box::new(Self {
+    ) -> Arc<dyn ActixVersionIdExtractor> {
+        Arc::new(Self {
             extractor_type: BaseActixVersionIdExtractorType::Header { header_name },
             version_validator,
         })

@@ -1,6 +1,6 @@
 use actix_web::{App, Result, get, test, web};
 use serde::{Deserialize, Serialize};
-use version_actix::{BaseActixVersionIdExtractor, VersionedJsonResponder};
+use version_actix::{ActixVersionIdExtractor, BaseActixVersionIdExtractor, VersionedJsonResponder};
 use version_core::{
     ApiVersionId, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
 };
@@ -57,8 +57,11 @@ fn build_app_config(cfg: &mut web::ServiceConfig) {
         "X-API-Version".to_string(),
         ApiVersion::validator(),
     );
+    let version_id_extractor: web::Data<dyn ActixVersionIdExtractor> =
+        web::Data::from(version_id_extractor);
+
     cfg.app_data(web::Data::new(registry))
-        .app_data(web::Data::new(version_id_extractor))
+        .app_data(version_id_extractor)
         .service(user_endpoint);
 }
 

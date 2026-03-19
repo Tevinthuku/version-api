@@ -18,8 +18,8 @@ pub struct ResourceRegistry {
 
 #[derive(Debug, Clone)]
 pub enum TransformDirection {
-    UpForRequests { from: VersionId },
-    DownForResponses { from: VersionId },
+    UpForRequests { user_version: VersionId },
+    DownForResponses { user_version: VersionId },
 }
 
 impl ResourceRegistry {
@@ -45,21 +45,20 @@ impl ResourceRegistry {
         let mut bytes = Bytes::from(serialized);
 
         if let Some(resource_version_changes) = self.versions.get(&resource_type_id) {
-            let transformers = resource_version_changes
-                .data
-                .iter()
-                .sorted_by(|a, b| match &direction {
-                    // sorting in ascending order, oldest versions first
-                    // we want to apply the transformers from the oldest to the latest
-                    TransformDirection::UpForRequests { from: _ } => a.0.cmp(b.0),
+            let transformers = match &direction {
+                TransformDirection::DownForResponses { user_version } => resource_version_changes
+                    .data
+                    .iter()
+                    .filter(|(transformer_version, _)| user_version < *transformer_version)
                     // sorting in descending order, latest versions first
-                    // we want to apply the transformers from the latest to the oldest
-                    TransformDirection::DownForResponses { from: _ } => b.0.cmp(a.0),
-                })
-                .take_while(|(version, _)| match &direction {
-                    TransformDirection::UpForRequests { from } => from > *version,
-                    TransformDirection::DownForResponses { from } => from < *version,
-                });
+                    .sorted_by(|a, b| b.0.cmp(a.0)),
+                TransformDirection::UpForRequests { user_version } => resource_version_changes
+                    .data
+                    .iter()
+                    .filter(|(transformer_version, _)| user_version > *transformer_version)
+                    // sorting in ascending order, oldest versions first
+                    .sorted_by(|a, b| a.0.cmp(b.0)),
+            };
 
             for (_, transformer) in transformers {
                 bytes = transformer.transform(bytes)?;

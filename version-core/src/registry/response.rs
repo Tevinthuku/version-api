@@ -23,7 +23,9 @@ impl ApiResponseResourceRegistry {
     ) -> Result<Bytes, Box<dyn std::error::Error>> {
         self.inner.transform(
             response_body,
-            TransformDirection::DownForResponses { from: api_version },
+            TransformDirection::DownForResponses {
+                user_version: api_version,
+            },
         )
     }
 

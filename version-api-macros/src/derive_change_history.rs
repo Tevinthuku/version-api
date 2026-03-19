@@ -69,6 +69,10 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
                 type Input = #from_type;
                 type Output = #to_type;
 
+                fn resource_type(&self) -> version_core::version::ResourceType {
+                    version_core::version::ResourceType::Response
+                }
+
                 fn description(&self) -> &str {
                     <#to_type as version_core::version::VersionChange>::description()
                 }

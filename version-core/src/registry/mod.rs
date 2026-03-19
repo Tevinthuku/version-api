@@ -8,7 +8,7 @@ mod tests {
 
     use crate::{
         registry::{ResourceRegistry, registry::TransformDirection},
-        version::{Version, VersionChangeTransformer},
+        version::{ResourceType, Version, VersionChangeTransformer},
     };
     use version_id::VersionId;
 
@@ -40,6 +40,10 @@ mod tests {
         type Input = UserWithMultipleStringAddresses;
         type Output = UserWithSingleAddress;
 
+        fn resource_type(&self) -> ResourceType {
+            ResourceType::Response
+        }
+
         fn description(&self) -> &str {
             "We replaced address with addresses because we now support multiple addresses per user"
         }
@@ -63,6 +67,10 @@ mod tests {
     impl VersionChangeTransformer for CollapseAddressesToListOfStr {
         type Input = User;
         type Output = UserWithMultipleStringAddresses;
+
+        fn resource_type(&self) -> ResourceType {
+            ResourceType::Response
+        }
 
         fn head_version(&self) -> TypeId {
             TypeId::of::<User>()

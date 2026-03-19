@@ -1,5 +1,5 @@
-use crate::version::ErasedVersionChangeTransformer;
 use crate::version::Version;
+use crate::version::{ErasedVersionChangeTransformer, ResourceType};
 use bytes::Bytes;
 use itertools::Itertools;
 use std::any::TypeId;
@@ -13,7 +13,8 @@ struct ApiResourceVersionChanges {
 
 #[derive(Default)]
 pub struct ResourceRegistry {
-    versions: HashMap<TypeId, ApiResourceVersionChanges>,
+    request_versions: HashMap<TypeId, ApiResourceVersionChanges>,
+    response_versions: HashMap<TypeId, ApiResourceVersionChanges>,
 }
 
 #[derive(Debug, Clone)]
@@ -30,11 +31,22 @@ impl ResourceRegistry {
         let version_change = version.id;
         for change in version.changes {
             let head_version = change.head_version();
-            self.versions
-                .entry(head_version)
-                .or_default()
-                .data
-                .insert(version_change.clone(), change);
+            match change.resource_type() {
+                ResourceType::Request => {
+                    self.request_versions
+                        .entry(head_version)
+                        .or_default()
+                        .data
+                        .insert(version_change.clone(), change);
+                }
+                ResourceType::Response => {
+                    self.response_versions
+                        .entry(head_version)
+                        .or_default()
+                        .data
+                        .insert(version_change.clone(), change);
+                }
+            }
         }
     }
 
@@ -47,7 +59,16 @@ impl ResourceRegistry {
         let serialized = serde_json::to_vec(&data)?;
         let mut bytes = Bytes::from(serialized);
 
-        if let Some(resource_version_changes) = self.versions.get(&resource_type_id) {
+        let maybe_resource_version_changes = match direction {
+            TransformDirection::DownForResponses { .. } => {
+                self.response_versions.get(&resource_type_id)
+            }
+            TransformDirection::UpForRequests { .. } => {
+                self.request_versions.get(&resource_type_id)
+            }
+        };
+
+        if let Some(resource_version_changes) = maybe_resource_version_changes {
             let transformers = match &direction {
                 TransformDirection::DownForResponses { user_version } => resource_version_changes
                     .data

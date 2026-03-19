@@ -8,15 +8,23 @@ use syn::{
     punctuated::Punctuated,
 };
 
-pub fn change_history_derive_impl(input: TokenStream) -> TokenStream {
+use crate::ChangeHistoryResourceType;
+
+pub fn change_history_derive_impl(
+    input: TokenStream,
+    resource_type: ChangeHistoryResourceType,
+) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    match change_history_impl(&input) {
+    match change_history_impl(&input, resource_type) {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),
     }
 }
 
-fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
+fn change_history_impl(
+    input: &DeriveInput,
+    resource_type: ChangeHistoryResourceType,
+) -> syn::Result<proc_macro2::TokenStream> {
     let change_history_type = &input.ident;
     let head = parse_head_attr(&input.attrs)?;
     let changes = parse_changes_attr(&input.attrs)?;
@@ -35,6 +43,11 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
     let mut chain: Vec<Type> = Vec::with_capacity(changes.len() + 1);
     chain.push(head.clone());
     chain.extend(changes_types.iter().cloned());
+
+    // TODO: Add a comment why we are doing this reversal here
+    if resource_type == ChangeHistoryResourceType::Request {
+        chain.reverse();
+    }
 
     let mut transformer_structs = Vec::new();
     let mut transformer_impls = Vec::new();
@@ -55,8 +68,12 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
         // Sanitize the type name for use as a Rust identifier (e.g. `Foo<Bar>` → `FooBar`)
         to_type_str.retain(|c| c.is_ascii_alphabetic() || c == '_');
 
-        let transformer_name =
-            format_ident!("__From_{}_To_{}Transformer", from_type_str, to_type_str);
+        let transformer_name = format_ident!(
+            "__From_{}_To_{}_{}_Transformer",
+            from_type_str,
+            to_type_str,
+            resource_type.as_str()
+        );
 
         transformer_structs.push(quote! {
             #[doc(hidden)]
@@ -64,13 +81,22 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
             struct #transformer_name;
         });
 
+        let resource_type = match resource_type {
+            ChangeHistoryResourceType::Request => {
+                quote! { version_core::version::ResourceType::Request }
+            }
+            ChangeHistoryResourceType::Response => {
+                quote! { version_core::version::ResourceType::Response }
+            }
+        };
+
         transformer_impls.push(quote! {
             impl version_core::version::VersionChangeTransformer for #transformer_name {
                 type Input = #from_type;
                 type Output = #to_type;
 
                 fn resource_type(&self) -> version_core::version::ResourceType {
-                    version_core::version::ResourceType::Response
+                    #resource_type
                 }
 
                 fn description(&self) -> &str {
@@ -117,7 +143,7 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
         #(#transformer_structs)*
         #(#transformer_impls)*
 
-        impl version_core::version::ChangeHistory for #change_history_type {
+        impl version_core::version::RequestChangeHistory for #change_history_type {
             type Head = #head;
 
             fn version_ids() -> ::std::vec::Vec<version_id::VersionId> {
@@ -145,11 +171,11 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
 
         impl #change_history_type {
             pub fn version_ids() -> ::std::vec::Vec<version_id::VersionId> {
-                <Self as version_core::version::ChangeHistory>::version_ids()
+                <Self as version_core::version::RequestChangeHistory>::version_ids()
             }
 
             pub fn register(registry: &mut version_core::registry::ResourceRegistry) -> Result<(), Box<dyn ::std::error::Error>> {
-                <Self as version_core::version::ChangeHistory>::register(registry)
+                <Self as version_core::version::RequestChangeHistory>::register(registry)
             }
         }
 

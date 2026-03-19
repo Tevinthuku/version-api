@@ -29,7 +29,7 @@ pub trait VersionChange {
     fn description() -> &'static str;
 }
 
-pub trait ChangeHistory {
+pub trait RequestChangeHistory {
     type Head: Any + 'static;
     fn version_ids() -> Vec<VersionId>;
     fn register(

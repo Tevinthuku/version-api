@@ -2,9 +2,13 @@ use actix_web::{Result, get, post, web};
 use serde::Deserialize;
 use serde::Serialize;
 use version_actix::{BaseActixVersionIdExtractor, VersionedJsonRequest, VersionedJsonResponder};
-use version_core::{ApiVersionId, ChangeHistory, VersionChange, registry::ResourceRegistry};
+use version_core::{
+    ApiVersionId, RequestChangeHistory, VersionChange,
+    registry::ResourceRegistry,
+};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, VersionChange)]
+#[description = "The latest user request model, with the first and last name"]
 struct CurrentUser {
     first_name: String,
     last_name: String,
@@ -55,7 +59,7 @@ pub enum ApiVersion {
     V0_9_0,
 }
 
-#[derive(ChangeHistory)]
+#[derive(RequestChangeHistory)]
 #[head(CurrentUser)]
 #[changes(
     below(ApiVersion::V2_0_0) => UserWithSingleNameField,
@@ -72,6 +76,15 @@ impl From<CurrentUser> for UserWithSingleNameField {
     fn from(obj: CurrentUser) -> Self {
         Self {
             name: format!("{} {}", obj.first_name, obj.last_name),
+        }
+    }
+}
+
+impl From<UserWithSingleNameField> for CurrentUser {
+    fn from(obj: UserWithSingleNameField) -> Self {
+        Self {
+            first_name: obj.name,
+            last_name: "".to_string(),
         }
     }
 }

@@ -16,7 +16,7 @@ use actix_web::{get, web, App, HttpServer, Result};
 use serde::Serialize;
 use version_actix::{BaseActixVersionIdExtractor, VersionedJsonResponder};
 use version_core::{
-    ApiVersionId, ChangeHistory, VersionChange, registry::ResourceRegistry,
+    ApiVersionId, RequestChangeHistory, VersionChange, registry::ResourceRegistry,
 };
 
 #[derive(Serialize)]
@@ -47,7 +47,7 @@ impl From<CurrentUser> for LegacyUserName {
     }
 }
 
-#[derive(ChangeHistory)]
+#[derive(ResponseChangeHistory)]
 #[head(CurrentUser)]
 #[changes(
     below(ApiVersion::V2_0_0) => LegacyUserName,
@@ -82,7 +82,7 @@ HttpServer::new(move || {
 ## Workspace crates
 
 - `version-id`: `VersionId` type and validation interface.
-- `version-api-macros`: derive macros (`ApiVersionId`, `ChangeHistory`, `VersionChange`).
+- `version-api-macros`: derive macros (`ApiVersionId`, `RequestChangeHistory`, `VersionChange`).
 - `version-core`: version change traits and transformation registry.
 - `version-actix`: Actix integration (`VersionedJsonResponder` + version extractors).
 
@@ -117,7 +117,7 @@ In `version-core`:
 
 - `#[derive(ApiVersionId)]` on version enums with `#[version("x.y.z")]`.
 - `#[derive(VersionChange)]` on historical DTOs.
-- `#[derive(ChangeHistory)]` to declare and register downgrade chains.
+- `#[derive(ResponseChangeHistory)]` to declare and register downgrade chains.
 
 ### Actix integration
 

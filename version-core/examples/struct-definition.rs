@@ -1,5 +1,6 @@
+use version_core::ResponseChangeHistory;
 use version_core::{
-    ApiVersionId, ChangeHistory, VersionChange,
+    ApiVersionId, VersionChange,
     registry::{ResourceRegistry, TransformDirection},
 };
 
@@ -60,7 +61,7 @@ impl From<CollapseUserAddressesToStrings> for CollapseUserAddressToSingleString 
     }
 }
 
-#[derive(ChangeHistory)]
+#[derive(ResponseChangeHistory)]
 #[head(User)]
 #[changes(
     below(MyApiVersions::V2_0_0) => CollapseUserAddressesToStrings,

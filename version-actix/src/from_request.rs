@@ -1,4 +1,4 @@
-use std::pin::Pin;
+use std::{any::TypeId, pin::Pin};
 
 use actix_web::{
     Error,
@@ -31,6 +31,7 @@ impl<T: DeserializeOwned + Serialize + 'static> FromRequest for VersionedJsonReq
                         json_body.0,
                         TransformDirection::UpForRequests {
                             user_version: version_id,
+                            target_request_type: TypeId::of::<T>(),
                         },
                     )?;
 

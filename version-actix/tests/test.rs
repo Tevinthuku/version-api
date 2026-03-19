@@ -1,7 +1,9 @@
 use actix_web::{App, Result, get, test, web};
 use serde::{Deserialize, Serialize};
 use version_actix::{ActixVersionIdExtractor, BaseActixVersionIdExtractor, VersionedJsonResponder};
-use version_core::{ApiVersionId, ChangeHistory, VersionChange, registry::ResourceRegistry};
+use version_core::{
+    ApiVersionId, ResponseChangeHistory, VersionChange, registry::ResourceRegistry,
+};
 
 #[derive(Serialize, Deserialize)]
 struct CurrentUser {
@@ -19,7 +21,7 @@ pub enum ApiVersion {
     V0_9_0,
 }
 
-#[derive(ChangeHistory)]
+#[derive(ResponseChangeHistory)]
 #[head(CurrentUser)]
 #[changes(
     below(ApiVersion::V2_0_0) => UserWithSingleNameField,

@@ -19,8 +19,14 @@ pub struct ResourceRegistry {
 
 #[derive(Debug, Clone)]
 pub enum TransformDirection {
-    UpForRequests { user_version: VersionId },
-    DownForResponses { user_version: VersionId },
+    // TODO: Add comment why we are passing in the target request type here
+    UpForRequests {
+        user_version: VersionId,
+        target_request_type: TypeId,
+    },
+    DownForResponses {
+        user_version: VersionId,
+    },
 }
 
 impl ResourceRegistry {
@@ -55,18 +61,36 @@ impl ResourceRegistry {
         data: impl std::any::Any + serde::Serialize,
         direction: TransformDirection,
     ) -> Result<Bytes, Box<dyn std::error::Error>> {
-        let resource_type_id = data.type_id();
         let serialized = serde_json::to_vec(&data)?;
         let mut bytes = Bytes::from(serialized);
+        println!(
+            "response_registry_length: {:?}",
+            self.response_versions.len(),
+        );
+        println!(
+            "request_registry_length: {:?}",
+            self.request_versions
+                .values()
+                .map(|v| v.data.keys().collect_vec())
+                .collect_vec()
+        );
 
         let maybe_resource_version_changes = match direction {
             TransformDirection::DownForResponses { .. } => {
+                let resource_type_id = data.type_id();
+
                 self.response_versions.get(&resource_type_id)
             }
-            TransformDirection::UpForRequests { .. } => {
-                self.request_versions.get(&resource_type_id)
-            }
+            TransformDirection::UpForRequests {
+                target_request_type,
+                ..
+            } => self.request_versions.get(&target_request_type),
         };
+
+        println!(
+            "maybe_resource_version_changes: {:?}",
+            maybe_resource_version_changes.map(|v| v.data.keys().collect_vec())
+        );
 
         if let Some(resource_version_changes) = maybe_resource_version_changes {
             let transformers = match &direction {
@@ -76,15 +100,18 @@ impl ResourceRegistry {
                     .filter(|(transformer_version, _)| user_version < *transformer_version)
                     // sorting in descending order, latest versions first
                     .sorted_by(|a, b| b.0.cmp(a.0)),
-                TransformDirection::UpForRequests { user_version } => resource_version_changes
+                TransformDirection::UpForRequests { user_version, .. } => resource_version_changes
                     .data
                     .iter()
-                    .filter(|(transformer_version, _)| user_version > *transformer_version)
+                    .inspect(|(version, _)| println!("Version: {:?}", version))
+                    // TODO: This works, check in the morning why ?
+                    .filter(|(transformer_version, _)| user_version < *transformer_version)
                     // sorting in ascending order, oldest versions first
                     .sorted_by(|a, b| a.0.cmp(b.0)),
             };
 
-            for (_, transformer) in transformers {
+            for (version, transformer) in transformers {
+                println!("Transforming with transformer: {:?}", version);
                 bytes = transformer.transform(bytes)?;
             }
         }

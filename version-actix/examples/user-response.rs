@@ -2,9 +2,7 @@ use actix_web::{Result, get, web};
 use serde::Deserialize;
 use serde::Serialize;
 use version_actix::{BaseActixVersionIdExtractor, VersionedJsonResponder};
-use version_core::{
-    ApiVersionId, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
-};
+use version_core::{ApiVersionId, ChangeHistory, VersionChange, registry::ResourceRegistry};
 
 #[derive(Serialize, Deserialize)]
 struct CurrentUser {
@@ -25,7 +23,7 @@ async fn index(name: web::Path<String>) -> Result<VersionedJsonResponder<Current
 async fn main() -> std::io::Result<()> {
     use actix_web::{App, HttpServer};
 
-    let mut registry = ApiResponseResourceRegistry::new();
+    let mut registry = ResourceRegistry::new();
     CurrentUserResponseHistoryVersions::register(&mut registry).unwrap();
 
     let version_id_extractor = web::Data::from(BaseActixVersionIdExtractor::header_extractor(

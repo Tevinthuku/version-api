@@ -120,7 +120,7 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
                 ::std::vec![#(#version_ids),*]
             }
 
-            fn register(registry: &mut version_core::registry::ApiResponseResourceRegistry) -> Result<(), Box<dyn ::std::error::Error>> {
+            fn register(registry: &mut version_core::registry::ResourceRegistry) -> Result<(), Box<dyn ::std::error::Error>> {
                 let version_ids = Self::version_ids();
 
                 for window in version_ids.windows(2) {
@@ -144,7 +144,7 @@ fn change_history_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
                 <Self as version_core::version::ChangeHistory>::version_ids()
             }
 
-            pub fn register(registry: &mut version_core::registry::ApiResponseResourceRegistry) -> Result<(), Box<dyn ::std::error::Error>> {
+            pub fn register(registry: &mut version_core::registry::ResourceRegistry) -> Result<(), Box<dyn ::std::error::Error>> {
                 <Self as version_core::version::ChangeHistory>::register(registry)
             }
         }

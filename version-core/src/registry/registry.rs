@@ -23,7 +23,10 @@ pub enum TransformDirection {
 }
 
 impl ResourceRegistry {
-    pub fn register_version(&mut self, version: Version) {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn register(&mut self, version: Version) {
         let version_change = version.id;
         for change in version.changes {
             let head_version = change.head_version();

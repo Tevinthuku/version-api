@@ -16,7 +16,7 @@ use actix_web::{get, web, App, HttpServer, Result};
 use serde::Serialize;
 use version_actix::{BaseActixVersionIdExtractor, VersionedJsonResponder};
 use version_core::{
-    ApiVersionId, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
+    ApiVersionId, ChangeHistory, VersionChange, registry::ResourceRegistry,
 };
 
 #[derive(Serialize)]
@@ -62,7 +62,7 @@ async fn user_endpoint(name: web::Path<String>) -> Result<VersionedJsonResponder
     }))
 }
 
-let mut registry = ApiResponseResourceRegistry::new();
+let mut registry = ResourceRegistry::new();
 CurrentUserResponseHistoryVersions::register(&mut registry).unwrap();
 
 let version_id_extractor = web::Data::from(BaseActixVersionIdExtractor::header_extractor(
@@ -109,7 +109,7 @@ In `version-core`:
 
 - `VersionChangeTransformer` defines a typed transformation (`Input -> Output`).
 - `ErasedVersionChangeTransformer` type-erases transformers so heterogeneous changes can be stored in one registry.
-- `ApiResponseResourceRegistry` stores changes per response type and version, then applies them in descending version order.
+- `ResourceRegistry` stores changes per response type and version, then applies them in descending version order.
 
 ### Derive macros
 

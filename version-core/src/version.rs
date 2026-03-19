@@ -27,7 +27,7 @@ pub trait ChangeHistory {
     type Head: Any + 'static;
     fn version_ids() -> Vec<VersionId>;
     fn register(
-        registry: &mut crate::registry::ApiResponseResourceRegistry,
+        registry: &mut crate::registry::ResourceRegistry,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 

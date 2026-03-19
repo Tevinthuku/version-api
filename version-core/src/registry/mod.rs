@@ -1,13 +1,13 @@
-mod response;
 mod registry;
-pub use response::ApiResponseResourceRegistry;
+pub use registry::ResourceRegistry;
+pub use registry::TransformDirection;
 
 #[cfg(test)]
 mod tests {
     use std::any::TypeId;
 
     use crate::{
-        registry::response::ApiResponseResourceRegistry,
+        registry::{ResourceRegistry, registry::TransformDirection},
         version::{Version, VersionChangeTransformer},
     };
     use version_id::VersionId;
@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_transformation_works_for_legacy_version() {
-        let mut registry = ApiResponseResourceRegistry::default();
+        let mut registry = ResourceRegistry::default();
 
         let user_2 = User {
             addresses: vec![Address {
@@ -107,7 +107,12 @@ mod tests {
         });
 
         let bytes = registry
-            .transform(user_2, VersionId::try_from("0.9.0").unwrap())
+            .transform(
+                user_2,
+                TransformDirection::DownForResponses {
+                    user_version: VersionId::try_from("0.9.0").unwrap(),
+                },
+            )
             .expect("Transformation failed");
 
         let user_1: UserWithSingleAddress = serde_json::from_slice(&bytes).unwrap();
@@ -117,7 +122,7 @@ mod tests {
 
     #[test]
     fn test_latest_version_returns_head_unchanged() {
-        let mut registry = ApiResponseResourceRegistry::default();
+        let mut registry = ResourceRegistry::default();
 
         registry.register(Version {
             id: VersionId::try_from("1.0.0").unwrap(),
@@ -136,7 +141,12 @@ mod tests {
         };
 
         let bytes = registry
-            .transform(user, VersionId::try_from("2.0.0").unwrap())
+            .transform(
+                user,
+                TransformDirection::DownForResponses {
+                    user_version: VersionId::try_from("2.0.0").unwrap(),
+                },
+            )
             .expect("Transformation failed");
         let latest: User = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(latest.addresses.len(), 1);

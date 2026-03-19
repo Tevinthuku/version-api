@@ -1,5 +1,5 @@
 mod response;
-
+mod registry;
 pub use response::ApiResponseResourceRegistry;
 
 #[cfg(test)]

@@ -45,3 +45,9 @@ impl<T: DeserializeOwned + Serialize + 'static> FromRequest for VersionedJsonReq
         })
     }
 }
+
+impl<T: DeserializeOwned + Serialize + 'static> VersionedJsonRequest<T> {
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}

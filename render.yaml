@@ -1,0 +1,13 @@
+# Exported from Render on 2026-03-20T12:08:06Z
+version: "1"
+services:
+- type: web
+  name: version-api
+  runtime: rust
+  repo: https://github.com/Tevinthuku/version-api
+  plan: free
+  region: frankfurt
+  buildCommand: cargo build --release
+  startCommand: cargo run --release
+  autoDeployTrigger: commit
+  rootDir: version-actix-roundtrip-example

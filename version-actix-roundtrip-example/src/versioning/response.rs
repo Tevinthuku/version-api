@@ -1,0 +1,51 @@
+use serde::{Deserialize, Serialize};
+use version_core::{ResponseChangeHistory, VersionChange};
+
+use crate::versioning::api_version::ApiVersion;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateUserResponse {
+    pub first_name: String,
+    pub last_name: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, VersionChange)]
+#[description = "Clients before v2.0.0 expect `full_name` instead of split fields"]
+pub struct LegacyCreateUserResponseV1 {
+    pub full_name: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, VersionChange)]
+#[description = "Clients before v1.0.0 expect `name` and a boolean success flag"]
+pub struct LegacyCreateUserResponseV0_5 {
+    pub name: String,
+    pub success: bool,
+}
+
+impl From<CreateUserResponse> for LegacyCreateUserResponseV1 {
+    fn from(response: CreateUserResponse) -> Self {
+        Self {
+            full_name: format!("{} {}", response.first_name, response.last_name),
+            status: response.status,
+        }
+    }
+}
+
+impl From<LegacyCreateUserResponseV1> for LegacyCreateUserResponseV0_5 {
+    fn from(response: LegacyCreateUserResponseV1) -> Self {
+        Self {
+            name: response.full_name,
+            success: response.status == "created",
+        }
+    }
+}
+
+#[derive(ResponseChangeHistory)]
+#[head(CreateUserResponse)]
+#[changes(
+    below(ApiVersion::V2_0_0) => LegacyCreateUserResponseV1,
+    below(ApiVersion::V1_0_0) => LegacyCreateUserResponseV0_5,
+)]
+pub struct CreateUserResponseHistory;

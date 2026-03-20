@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::{ToTokens, format_ident, quote};
@@ -42,7 +43,13 @@ fn change_history_impl(
 
     let mut chain: Vec<Type> = Vec::with_capacity(changes.len() + 1);
     chain.push(head.clone());
-    chain.extend(changes_types.iter().cloned());
+    chain.extend(changes_types.into_iter());
+
+    let mut from_assertions = Vec::new();
+
+    let mut transformer_structs = Vec::new();
+    let mut transformer_impls = Vec::new();
+    let mut register_entries = Vec::new();
 
     // For responses, the chain is Head → Oldest (downgrade): we convert from the
     // latest type toward older versions, so the natural order [Head, ...changes] is
@@ -53,21 +60,24 @@ fn change_history_impl(
     // is still authored newest-first (matching the response convention), so we
     // reverse the chain here to get Oldest → Head, making each `From` step go
     // from an older type to the next newer one.
-    if resource_type == TransformDirection::Request {
-        chain.reverse();
-    }
+    let transform_steps = match resource_type {
+        TransformDirection::Request => chain
+            .iter()
+            .rev()
+            .tuple_windows::<(_, _)>()
+            .zip(changes.iter().rev().map(|data| data.version.clone()))
+            .collect::<Vec<_>>(),
+        TransformDirection::Response => chain
+            .iter()
+            .tuple_windows::<(_, _)>()
+            .zip(changes.iter().map(|data| data.version.clone()))
+            .collect::<Vec<_>>(),
+    };
 
-    let mut transformer_structs = Vec::new();
-    let mut transformer_impls = Vec::new();
-    let mut register_entries = Vec::new();
-
-    for (window, version) in chain
-        .windows(2)
-        .zip(changes.iter().map(|data| data.version.clone()))
-    {
-        let from_type = &window[0];
-        let to_type = &window[1];
-
+    for ((from_type, to_type), version) in transform_steps.iter() {
+        from_assertions.push(quote! {
+            _assert_from::<#from_type, #to_type>();
+        });
         let mut from_type_str = from_type.into_token_stream().to_string();
         // Sanitize the type name for use as a Rust identifier (e.g. `Foo<Bar>` → `FooBar`)
         from_type_str.retain(|c| c.is_ascii_alphabetic() || c == '_');
@@ -133,15 +143,6 @@ fn change_history_impl(
     let version_ids = changes.into_iter().map(|data| data.version).map(|version| {
         quote! { ::std::convert::Into::<version_id::VersionId>::into(#version) }
     });
-
-    let mut from_assertions = Vec::new();
-    for window in chain.windows(2) {
-        let from_type = &window[0];
-        let to_type = &window[1];
-        from_assertions.push(quote! {
-            _assert_from::<#from_type, #to_type>();
-        });
-    }
 
     Ok(quote! {
         #(#transformer_structs)*

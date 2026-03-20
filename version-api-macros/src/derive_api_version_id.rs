@@ -102,7 +102,7 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
                 }
             }
 
-            fn validator() -> Box<dyn version_id::VersionIdValidator> {
+            pub fn validator() -> Box<dyn version_id::VersionIdValidator> {
                 Box::new(#validator_name)
             }
         }

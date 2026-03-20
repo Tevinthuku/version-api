@@ -1,0 +1,11 @@
+[package]
+name = "version-actix-roundtrip-example"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+actix-web = "4"
+serde = { version = "1.0", features = ["derive"] }
+version-actix = { path = "../version-actix" }
+version-core = { path = "../version-core" }
+version-id = { path = "../version-id" }

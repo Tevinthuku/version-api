@@ -1,4 +1,5 @@
 mod versioning;
+use std::env;
 
 use actix_web::{App, HttpServer, Result, post, web};
 use version_actix::{
@@ -42,8 +43,9 @@ fn build_app_config(cfg: &mut web::ServiceConfig) {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     HttpServer::new(|| App::new().configure(build_app_config))
-        .bind(("127.0.0.1", 8080))?
+        .bind(("127.0.0.1", port.parse::<u16>().unwrap()))?
         .run()
         .await
 }

@@ -2,7 +2,7 @@ use actix_web::{App, Result, get, test, web};
 use serde::{Deserialize, Serialize};
 use version_actix::{ActixVersionIdExtractor, BaseActixVersionIdExtractor, VersionedJsonResponder};
 use version_core::{
-    ApiVersionId, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
+    ApiVersionId, ResponseChangeHistory, VersionChange, registry::ResourceRegistry,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -21,7 +21,7 @@ pub enum ApiVersion {
     V0_9_0,
 }
 
-#[derive(ChangeHistory)]
+#[derive(ResponseChangeHistory)]
 #[head(CurrentUser)]
 #[changes(
     below(ApiVersion::V2_0_0) => UserWithSingleNameField,
@@ -51,7 +51,7 @@ async fn user_endpoint(name: web::Path<String>) -> Result<VersionedJsonResponder
 }
 
 fn build_app_config(cfg: &mut web::ServiceConfig) {
-    let mut registry = ApiResponseResourceRegistry::new();
+    let mut registry = ResourceRegistry::default();
     CurrentUserResponseHistoryVersions::register(&mut registry).unwrap();
     let version_id_extractor = BaseActixVersionIdExtractor::header_extractor(
         "X-API-Version".to_string(),

@@ -3,23 +3,24 @@
 `version-api` is an experiment, inspired by Stripe's API versioning approach:
 https://stripe.com/blog/api-versioning
 
-The goal is to keep your latest response shape as the source of truth, then transform it backwards for older API versions when needed.
+The goal is to keep your latest request and response shapes as the source of truth, then:
 
-Request-side versioning (body/params) is coming soonish.
+- **Responses** are transformed _backwards_ (downgraded) for clients on older API versions.
+- **Requests** are transformed _forwards_ (upgraded) from older client shapes into the latest model your handlers expect.
 
-See `version-actix/examples` for a complete, runnable example.
+See `version-actix/examples` for complete, runnable examples.
 
-### Actix quick example
+### Response versioning quick example
 
 ```rust
 use actix_web::{get, web, App, HttpServer, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use version_actix::{BaseActixVersionIdExtractor, VersionedJsonResponder};
 use version_core::{
-    ApiVersionId, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
+    ApiVersionId, ResponseChangeHistory, VersionChange, registry::ResourceRegistry,
 };
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct CurrentUser {
     first_name: String,
     last_name: String,
@@ -33,7 +34,7 @@ enum ApiVersion {
     V1_0_0,
 }
 
-#[derive(Serialize, VersionChange)]
+#[derive(Serialize, Deserialize, VersionChange)]
 #[description = "Clients below 2.0.0 expect a single `name` field"]
 struct LegacyUserName {
     name: String,
@@ -47,12 +48,12 @@ impl From<CurrentUser> for LegacyUserName {
     }
 }
 
-#[derive(ChangeHistory)]
+#[derive(ResponseChangeHistory)]
 #[head(CurrentUser)]
 #[changes(
     below(ApiVersion::V2_0_0) => LegacyUserName,
 )]
-struct CurrentUserResponseHistoryVersions;
+struct CurrentUserResponseHistory;
 
 #[get("/user/{name}")]
 async fn user_endpoint(name: web::Path<String>) -> Result<VersionedJsonResponder<CurrentUser>> {
@@ -62,8 +63,8 @@ async fn user_endpoint(name: web::Path<String>) -> Result<VersionedJsonResponder
     }))
 }
 
-let mut registry = ApiResponseResourceRegistry::new();
-CurrentUserResponseHistoryVersions::register(&mut registry).unwrap();
+let mut registry = ResourceRegistry::new();
+CurrentUserResponseHistory::register(&mut registry).unwrap();
 
 let version_id_extractor = web::Data::from(BaseActixVersionIdExtractor::header_extractor(
     "X-API-Version".to_string(),
@@ -79,21 +80,83 @@ HttpServer::new(move || {
 });
 ```
 
+### Request versioning quick example
+
+```rust
+use actix_web::{post, web, App, HttpServer, Result};
+use serde::{Deserialize, Serialize};
+use version_actix::{BaseActixVersionIdExtractor, VersionedJsonRequest};
+use version_core::{
+    ApiVersionId, RequestChangeHistory, VersionChange, registry::ResourceRegistry,
+};
+
+#[derive(Serialize, Deserialize)]
+struct CreateUserRequest {
+    first_name: String,
+    last_name: String,
+}
+
+// Same ApiVersion enum as above...
+
+#[derive(Serialize, Deserialize, VersionChange)]
+#[description = "Clients below 2.0.0 sent a single name field"]
+struct LegacyCreateUserRequest {
+    name: String,
+}
+
+// For requests, the From direction is reversed: old shape → new shape
+impl From<LegacyCreateUserRequest> for CreateUserRequest {
+    fn from(obj: LegacyCreateUserRequest) -> Self {
+        let mut parts = obj.name.splitn(2, ' ');
+        Self {
+            first_name: parts.next().unwrap_or_default().to_string(),
+            last_name: parts.next().unwrap_or_default().to_string(),
+        }
+    }
+}
+
+#[derive(RequestChangeHistory)]
+#[head(CreateUserRequest)]
+#[changes(
+    below(ApiVersion::V2_0_0) => LegacyCreateUserRequest,
+)]
+struct CreateUserRequestHistory;
+
+#[post("/users")]
+async fn create_user(user: VersionedJsonRequest<CreateUserRequest>) -> Result<web::Json<CreateUserRequest>> {
+    Ok(web::Json(user.into_inner()))
+}
+
+let mut registry = ResourceRegistry::new();
+CreateUserRequestHistory::register(&mut registry).unwrap();
+
+// ... same extractor and HttpServer setup as the response example
+```
+
 ## Workspace crates
 
 - `version-id`: `VersionId` type and validation interface.
-- `version-api-macros`: derive macros (`ApiVersionId`, `ChangeHistory`, `VersionChange`).
+- `version-api-macros`: derive macros (`ApiVersionId`, `ResponseChangeHistory`, `RequestChangeHistory`, `VersionChange`).
 - `version-core`: version change traits and transformation registry.
-- `version-actix`: Actix integration (`VersionedJsonResponder` + version extractors).
+- `version-actix`: Actix integration (`VersionedJsonResponder`, `VersionedJsonRequest`, version extractors).
 
 ## Design overview
 
-The system follows a "latest-first + rollback transforms" design:
+The system follows a "latest-first + transform" design that works in both directions:
+
+**Responses (downgrade):**
 
 1. Handler builds the latest response model.
-2. A request version ID is resolved (header, middleware, request extensions, etc.).
+2. A version ID is resolved from the request (header, middleware, request extensions, etc.).
 3. `version-core` applies registered transforms from newest to oldest until the target version boundary is reached.
-4. The transformed payload is returned.
+4. The downgraded payload is returned to the client.
+
+**Requests (upgrade):**
+
+1. The incoming request body is deserialized.
+2. A version ID is resolved from the request.
+3. `version-core` applies registered transforms from oldest to newest, upgrading the body to the latest shape.
+4. The handler receives the latest model, regardless of which version the client sent.
 
 This design keeps current code paths simple while isolating legacy behavior in explicit version change types.
 
@@ -109,7 +172,7 @@ In `version-core`:
 
 - `VersionChangeTransformer` defines a typed transformation (`Input -> Output`).
 - `ErasedVersionChangeTransformer` type-erases transformers so heterogeneous changes can be stored in one registry.
-- `ApiResponseResourceRegistry` stores changes per response type and version, then applies them in descending version order.
+- `ResourceRegistry` stores changes per resource type and version, separated by direction (request vs response), then applies them in the appropriate order.
 
 ### Derive macros
 
@@ -117,24 +180,26 @@ In `version-core`:
 
 - `#[derive(ApiVersionId)]` on version enums with `#[version("x.y.z")]`.
 - `#[derive(VersionChange)]` on historical DTOs.
-- `#[derive(ChangeHistory)]` to declare and register downgrade chains.
+- `#[derive(ResponseChangeHistory)]` to declare and register response downgrade chains.
+- `#[derive(RequestChangeHistory)]` to declare and register request upgrade chains.
 
 ### Actix integration
 
 `version-actix` provides:
 
-- `VersionedJsonResponder<T>`: serializes and conditionally transforms outgoing JSON.
-- `ActixVersionIdExtractor`: a trait that defines how to resolve the request’s API version in Actix.
+- `VersionedJsonResponder<T>`: serializes and conditionally transforms outgoing JSON responses.
+- `VersionedJsonRequest<T>`: deserializes and conditionally transforms incoming JSON request bodies.
+- `ActixVersionIdExtractor`: a trait that defines how to resolve the request's API version in Actix.
 - `BaseActixVersionIdExtractor`: default header-based extractor.
 
 ## Current scope
 
-- Response payload versioning (JSON transformations) is implemented.
+- Response payload versioning (JSON downgrade transformations) is implemented.
+- Request body versioning (JSON upgrade transformations) is implemented.
 - Version extraction is pluggable in Actix.
 
 ## Roadmap
 
-Planned next areas: (Once I get the time to actually do it)
+Planned next areas:
 
-1. Request body versioning (input shape compatibility transforms).
-2. Request params versioning (path/query/header normalization across versions).
+1. Improve error handling

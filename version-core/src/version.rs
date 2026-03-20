@@ -2,6 +2,12 @@ use bytes::Bytes;
 use std::any::{Any, TypeId};
 use version_id::VersionId;
 
+#[derive(Debug, Clone, Copy)]
+pub enum ResourceType {
+    Request,
+    Response,
+}
+
 #[doc(hidden)]
 // Internal type-erased adapter used by the registry.
 // `VersionChangeTransformer` has associated types (`Input`/`Output`), so each
@@ -10,6 +16,7 @@ use version_id::VersionId;
 // accepting/returning `Bytes`, allowing us to keep all transformers in
 // the same registry map and invoke them dynamically at runtime.
 pub trait ErasedVersionChangeTransformer: Send + Sync {
+    fn resource_type(&self) -> ResourceType;
     fn head_version(&self) -> TypeId;
     fn transform(&self, value: Bytes) -> Result<Bytes, Box<dyn std::error::Error>>;
 }
@@ -23,18 +30,18 @@ pub trait VersionChange {
     fn description() -> &'static str;
 }
 
-pub trait ChangeHistory {
+pub trait RequestChangeHistory {
     type Head: Any + 'static;
     fn version_ids() -> Vec<VersionId>;
     fn register(
-        registry: &mut crate::registry::ApiResponseResourceRegistry,
+        registry: &mut crate::registry::ResourceRegistry,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 pub trait VersionChangeTransformer {
     type Input: Any + 'static;
     type Output: Any + 'static;
-
+    fn resource_type(&self) -> ResourceType;
     fn description(&self) -> &str;
     fn head_version(&self) -> TypeId;
     fn transform(&self, value: Self::Input) -> Result<Self::Output, Box<dyn std::error::Error>>;
@@ -46,6 +53,9 @@ where
     T::Input: serde::de::DeserializeOwned,
     T::Output: serde::Serialize,
 {
+    fn resource_type(&self) -> ResourceType {
+        VersionChangeTransformer::resource_type(self)
+    }
     fn head_version(&self) -> TypeId {
         VersionChangeTransformer::head_version(self)
     }

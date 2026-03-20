@@ -1,6 +1,7 @@
-use version_core::{
-    ApiVersionId, ChangeHistory, VersionChange, registry::ApiResponseResourceRegistry,
-};
+use std::any::TypeId;
+
+use version_core::{ApiVersionId, TransformDirection, VersionChange, registry::ResourceRegistry};
+use version_core::{ResponseChangeHistory, registry::TransformContext};
 
 #[derive(ApiVersionId)]
 pub enum MyApiVersions {
@@ -59,7 +60,7 @@ impl From<CollapseUserAddressesToStrings> for CollapseUserAddressToSingleString 
     }
 }
 
-#[derive(ChangeHistory)]
+#[derive(ResponseChangeHistory)]
 #[head(User)]
 #[changes(
     below(MyApiVersions::V2_0_0) => CollapseUserAddressesToStrings,
@@ -68,7 +69,7 @@ impl From<CollapseUserAddressesToStrings> for CollapseUserAddressToSingleString 
 struct UserResponseHistoryVersions;
 
 fn main() {
-    let mut registry = ApiResponseResourceRegistry::default();
+    let mut registry = ResourceRegistry::default();
     UserResponseHistoryVersions::register(&mut registry).unwrap();
 
     let user = User {
@@ -84,7 +85,14 @@ fn main() {
     };
 
     let bytes = registry
-        .transform(user.clone(), MyApiVersions::V1_0_0.as_version_id())
+        .transform(
+            user.clone(),
+            TransformContext {
+                direction: TransformDirection::Response,
+                head_type: TypeId::of::<CollapseUserAddressesToStrings>(),
+                user_version: MyApiVersions::V1_0_0.as_version_id(),
+            },
+        )
         .unwrap();
     let user_with_string_addresses: CollapseUserAddressesToStrings =
         serde_json::from_slice(&bytes).unwrap();
@@ -94,7 +102,14 @@ fn main() {
     );
 
     let bytes = registry
-        .transform(user.clone(), MyApiVersions::V0_9_0.as_version_id())
+        .transform(
+            user.clone(),
+            TransformContext {
+                direction: TransformDirection::Response,
+                head_type: TypeId::of::<CollapseUserAddressToSingleString>(),
+                user_version: MyApiVersions::V0_9_0.as_version_id(),
+            },
+        )
         .unwrap();
     let user_with_single_address: CollapseUserAddressToSingleString =
         serde_json::from_slice(&bytes).unwrap();

@@ -1,22 +1,24 @@
-use actix_web::{Result, get, web};
+use actix_web::{Result, post, web};
 use serde::Deserialize;
 use serde::Serialize;
-use version_actix::{BaseActixVersionIdExtractor, VersionedJsonResponder};
-use version_core::{
-    ApiVersionId, ResponseChangeHistory, VersionChange, registry::ResourceRegistry,
-};
+use version_actix::{BaseActixVersionIdExtractor, VersionedJsonRequest, VersionedJsonResponder};
+use version_core::{ApiVersionId, RequestChangeHistory, VersionChange, registry::ResourceRegistry};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, VersionChange)]
+#[description = "The latest user request model, with the first and last name"]
 struct CurrentUser {
     first_name: String,
     last_name: String,
 }
 
-#[get("/a/{name}")]
-async fn index(name: web::Path<String>) -> Result<VersionedJsonResponder<CurrentUser>> {
+#[post("/users")]
+async fn create_user(
+    user: VersionedJsonRequest<CurrentUser>,
+) -> Result<VersionedJsonResponder<CurrentUser>> {
+    let user = user.into_inner();
     let obj = CurrentUser {
-        first_name: name.to_string(),
-        last_name: name.to_string(),
+        first_name: user.first_name,
+        last_name: user.last_name,
     };
     Ok(VersionedJsonResponder(obj))
 }
@@ -35,7 +37,7 @@ async fn main() -> std::io::Result<()> {
     let registry = web::Data::new(registry);
     HttpServer::new(move || {
         App::new()
-            .service(index)
+            .service(create_user)
             .app_data(registry.clone())
             .app_data(version_id_extractor.clone())
     })
@@ -54,7 +56,7 @@ pub enum ApiVersion {
     V0_9_0,
 }
 
-#[derive(ResponseChangeHistory)]
+#[derive(RequestChangeHistory)]
 #[head(CurrentUser)]
 #[changes(
     below(ApiVersion::V2_0_0) => UserWithSingleNameField,
@@ -71,6 +73,15 @@ impl From<CurrentUser> for UserWithSingleNameField {
     fn from(obj: CurrentUser) -> Self {
         Self {
             name: format!("{} {}", obj.first_name, obj.last_name),
+        }
+    }
+}
+
+impl From<UserWithSingleNameField> for CurrentUser {
+    fn from(obj: UserWithSingleNameField) -> Self {
+        Self {
+            first_name: obj.name,
+            last_name: "".to_string(),
         }
     }
 }

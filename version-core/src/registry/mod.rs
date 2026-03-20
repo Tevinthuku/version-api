@@ -3,7 +3,7 @@ pub use registry::ResourceRegistry;
 pub use registry::TransformDirection;
 
 #[cfg(test)]
-mod tests {
+mod response_registry_tests {
     use std::any::TypeId;
 
     use crate::{
@@ -160,5 +160,89 @@ mod tests {
         assert_eq!(latest.addresses.len(), 1);
         assert_eq!(latest.addresses[0].location, "123 Main St");
         assert_eq!(latest.addresses[0].country.as_deref(), Some("USA"));
+    }
+}
+
+#[cfg(test)]
+mod request_registry_tests {
+    use std::any::TypeId;
+
+    use crate::{
+        registry::{ResourceRegistry, registry::TransformDirection},
+        version::{ResourceType, Version, VersionChangeTransformer},
+    };
+    use version_id::VersionId;
+
+    #[derive(Debug, serde::Serialize, serde::Deserialize)]
+    struct User {
+        first_name: String,
+        last_name: String,
+    }
+
+    #[derive(Debug, serde::Serialize, serde::Deserialize)]
+    struct UserWithSingleNameField {
+        name: String,
+    }
+
+    struct ExpandSingleNameToSplitNames;
+
+    impl VersionChangeTransformer for ExpandSingleNameToSplitNames {
+        type Input = UserWithSingleNameField;
+        type Output = User;
+
+        fn resource_type(&self) -> ResourceType {
+            ResourceType::Request
+        }
+
+        fn description(&self) -> &str {
+            "Older request payloads send `name`; latest expects `first_name` + `last_name`"
+        }
+
+        fn head_version(&self) -> TypeId {
+            TypeId::of::<User>()
+        }
+
+        fn transform(
+            &self,
+            input: UserWithSingleNameField,
+        ) -> Result<User, Box<dyn std::error::Error>> {
+            let mut parts = input.name.splitn(2, ' ');
+            let first_name = parts.next().unwrap_or_default().to_string();
+            let last_name = parts.next().unwrap_or_default().to_string();
+
+            Ok(User {
+                first_name,
+                last_name,
+            })
+        }
+    }
+
+    #[test]
+    fn test_legacy_request_payload_is_upgraded_to_latest_model() {
+        let mut registry = ResourceRegistry::default();
+
+        // Legacy shape applies to versions below 2.0.0
+        registry.register(Version {
+            id: VersionId::try_from("2.0.0").unwrap(),
+            changes: vec![Box::new(ExpandSingleNameToSplitNames)],
+        });
+
+        let legacy_request = UserWithSingleNameField {
+            name: "Alice Doe".to_string(),
+        };
+
+        let bytes = registry
+            .transform(
+                legacy_request,
+                TransformDirection::UpForRequests {
+                    user_version: VersionId::try_from("1.0.0").unwrap(),
+                    target_request_type: TypeId::of::<User>(),
+                },
+            )
+            .expect("Request transformation failed");
+
+        let latest_request: User = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(latest_request.first_name, "Alice");
+        assert_eq!(latest_request.last_name, "Doe");
     }
 }

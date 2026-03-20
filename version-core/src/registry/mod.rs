@@ -1,5 +1,6 @@
 mod registry;
 pub use registry::ResourceRegistry;
+pub use registry::TransformContext;
 pub use registry::TransformDirection;
 
 #[cfg(test)]
@@ -7,7 +8,7 @@ mod response_registry_tests {
     use std::any::TypeId;
 
     use crate::{
-        registry::{ResourceRegistry, registry::TransformDirection},
+        registry::{ResourceRegistry, TransformContext, registry::TransformDirection},
         version::{ResourceType, Version, VersionChangeTransformer},
     };
     use version_id::VersionId;
@@ -117,8 +118,10 @@ mod response_registry_tests {
         let bytes = registry
             .transform(
                 user_2,
-                TransformDirection::DownForResponses {
+                TransformContext {
+                    direction: TransformDirection::Response,
                     user_version: VersionId::try_from("0.9.0").unwrap(),
+                    head_type: TypeId::of::<User>(),
                 },
             )
             .expect("Transformation failed");
@@ -151,7 +154,9 @@ mod response_registry_tests {
         let bytes = registry
             .transform(
                 user,
-                TransformDirection::DownForResponses {
+                TransformContext {
+                    direction: TransformDirection::Response,
+                    head_type: TypeId::of::<User>(),
                     user_version: VersionId::try_from("2.0.0").unwrap(),
                 },
             )
@@ -168,7 +173,7 @@ mod request_registry_tests {
     use std::any::TypeId;
 
     use crate::{
-        registry::{ResourceRegistry, registry::TransformDirection},
+        registry::{ResourceRegistry, TransformContext, registry::TransformDirection},
         version::{ResourceType, Version, VersionChangeTransformer},
     };
     use version_id::VersionId;
@@ -234,9 +239,10 @@ mod request_registry_tests {
         let bytes = registry
             .transform(
                 legacy_request,
-                TransformDirection::UpForRequests {
+                TransformContext {
+                    direction: TransformDirection::Request,
                     user_version: VersionId::try_from("1.0.0").unwrap(),
-                    target_request_type: TypeId::of::<User>(),
+                    head_type: TypeId::of::<User>(),
                 },
             )
             .expect("Request transformation failed");

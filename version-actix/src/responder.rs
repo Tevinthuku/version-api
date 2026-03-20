@@ -1,8 +1,13 @@
+use std::any::TypeId;
+
 use actix_web::body::BoxBody;
 use actix_web::{HttpResponse, Responder, body::EitherBody, error::JsonPayloadError};
 use actix_web::{mime, web};
 use serde::Serialize;
-use version_core::registry::{ResourceRegistry, TransformDirection};
+use version_core::{
+    TransformDirection,
+    registry::{ResourceRegistry, TransformContext},
+};
 
 use crate::extractors::ActixVersionIdExtractor;
 
@@ -38,7 +43,9 @@ impl<T: Serialize + 'static> VersionedJsonResponder<T> {
                 transformed_body = registry
                     .transform(
                         self.0,
-                        TransformDirection::DownForResponses {
+                        TransformContext {
+                            direction: TransformDirection::Response,
+                            head_type: TypeId::of::<T>(),
                             user_version: version_id,
                         },
                     )?

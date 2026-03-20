@@ -6,7 +6,10 @@ use actix_web::{
 };
 use actix_web::{FromRequest, HttpRequest, dev::Payload};
 use serde::{Serialize, de::DeserializeOwned};
-use version_core::registry::{ResourceRegistry, TransformDirection};
+use version_core::{
+    TransformDirection,
+    registry::{ResourceRegistry, TransformContext},
+};
 
 use crate::ActixVersionIdExtractor;
 
@@ -29,9 +32,10 @@ impl<T: DeserializeOwned + Serialize + 'static> FromRequest for VersionedJsonReq
                 if let Some(version_id) = version_id {
                     let transformed_body = registry.transform(
                         json_body.0,
-                        TransformDirection::UpForRequests {
+                        TransformContext {
+                            direction: TransformDirection::Request,
+                            head_type: TypeId::of::<T>(),
                             user_version: version_id,
-                            target_request_type: TypeId::of::<T>(),
                         },
                     )?;
 

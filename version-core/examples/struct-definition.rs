@@ -1,8 +1,7 @@
-use version_core::ResponseChangeHistory;
-use version_core::{
-    ApiVersionId, VersionChange,
-    registry::{ResourceRegistry, TransformDirection},
-};
+use std::any::TypeId;
+
+use version_core::{ApiVersionId, TransformDirection, VersionChange, registry::ResourceRegistry};
+use version_core::{ResponseChangeHistory, registry::TransformContext};
 
 #[derive(ApiVersionId)]
 pub enum MyApiVersions {
@@ -88,7 +87,9 @@ fn main() {
     let bytes = registry
         .transform(
             user.clone(),
-            TransformDirection::DownForResponses {
+            TransformContext {
+                direction: TransformDirection::Response,
+                head_type: TypeId::of::<CollapseUserAddressesToStrings>(),
                 user_version: MyApiVersions::V1_0_0.as_version_id(),
             },
         )
@@ -103,7 +104,9 @@ fn main() {
     let bytes = registry
         .transform(
             user.clone(),
-            TransformDirection::DownForResponses {
+            TransformContext {
+                direction: TransformDirection::Response,
+                head_type: TypeId::of::<CollapseUserAddressToSingleString>(),
                 user_version: MyApiVersions::V0_9_0.as_version_id(),
             },
         )

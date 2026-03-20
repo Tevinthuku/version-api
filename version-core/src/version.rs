@@ -2,6 +2,7 @@ use bytes::Bytes;
 use std::any::{Any, TypeId};
 use version_id::VersionId;
 
+#[derive(Debug, Clone, Copy)]
 pub enum ResourceType {
     Request,
     Response,

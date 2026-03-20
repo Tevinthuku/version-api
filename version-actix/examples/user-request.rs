@@ -1,11 +1,8 @@
-use actix_web::{Result, get, post, web};
+use actix_web::{Result, post, web};
 use serde::Deserialize;
 use serde::Serialize;
 use version_actix::{BaseActixVersionIdExtractor, VersionedJsonRequest, VersionedJsonResponder};
-use version_core::{
-    ApiVersionId, RequestChangeHistory, VersionChange,
-    registry::ResourceRegistry,
-};
+use version_core::{ApiVersionId, RequestChangeHistory, VersionChange, registry::ResourceRegistry};
 
 #[derive(Serialize, Deserialize, VersionChange)]
 #[description = "The latest user request model, with the first and last name"]

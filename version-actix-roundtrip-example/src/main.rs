@@ -45,7 +45,7 @@ fn build_app_config(cfg: &mut web::ServiceConfig) {
 async fn main() -> std::io::Result<()> {
     let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     HttpServer::new(|| App::new().configure(build_app_config))
-        .bind(("127.0.0.1", port.parse::<u16>().unwrap()))?
+        .bind(("0.0.0.0", port.parse::<u16>().unwrap()))?
         .run()
         .await
 }

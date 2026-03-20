@@ -90,7 +90,8 @@ use version_core::{
     ApiVersionId, RequestChangeHistory, VersionChange, registry::ResourceRegistry,
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, VersionChange)]
+#[description("The latest user model expects both first_name and last_name")]
 struct CreateUserRequest {
     first_name: String,
     last_name: String,
@@ -99,7 +100,7 @@ struct CreateUserRequest {
 // Same ApiVersion enum as above...
 
 #[derive(Serialize, Deserialize, VersionChange)]
-#[description = "Clients below 2.0.0 sent a single name field"]
+#[description = "Clients below 2.0.0 send a single name field"]
 struct LegacyCreateUserRequest {
     name: String,
 }

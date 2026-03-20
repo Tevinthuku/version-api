@@ -8,11 +8,11 @@ use syn::{
     punctuated::Punctuated,
 };
 
-use crate::ChangeHistoryResourceType;
+use crate::TransformDirection;
 
 pub fn change_history_derive_impl(
     input: TokenStream,
-    resource_type: ChangeHistoryResourceType,
+    resource_type: TransformDirection,
 ) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     match change_history_impl(&input, resource_type) {
@@ -23,7 +23,7 @@ pub fn change_history_derive_impl(
 
 fn change_history_impl(
     input: &DeriveInput,
-    resource_type: ChangeHistoryResourceType,
+    resource_type: TransformDirection,
 ) -> syn::Result<proc_macro2::TokenStream> {
     let change_history_type = &input.ident;
     let head = parse_head_attr(&input.attrs)?;
@@ -44,8 +44,16 @@ fn change_history_impl(
     chain.push(head.clone());
     chain.extend(changes_types.iter().cloned());
 
-    // TODO: Add a comment why we are doing this reversal here
-    if resource_type == ChangeHistoryResourceType::Request {
+    // For responses, the chain is Head → Oldest (downgrade): we convert from the
+    // latest type toward older versions, so the natural order [Head, ...changes] is
+    // already correct.
+    //
+    // For requests, the direction is reversed — we upgrade from an older request
+    // body toward the Head type that the handler expects. The `#[changes]` list
+    // is still authored newest-first (matching the response convention), so we
+    // reverse the chain here to get Oldest → Head, making each `From` step go
+    // from an older type to the next newer one.
+    if resource_type == TransformDirection::Request {
         chain.reverse();
     }
 
@@ -68,12 +76,8 @@ fn change_history_impl(
         // Sanitize the type name for use as a Rust identifier (e.g. `Foo<Bar>` → `FooBar`)
         to_type_str.retain(|c| c.is_ascii_alphabetic() || c == '_');
 
-        let transformer_name = format_ident!(
-            "__From_{}_To_{}_{}_Transformer",
-            from_type_str,
-            to_type_str,
-            resource_type.as_str()
-        );
+        let transformer_name =
+            format_ident!("__From_{}_To_{}_Transformer", from_type_str, to_type_str,);
 
         transformer_structs.push(quote! {
             #[doc(hidden)]
@@ -82,10 +86,10 @@ fn change_history_impl(
         });
 
         let resource_type = match resource_type {
-            ChangeHistoryResourceType::Request => {
+            TransformDirection::Request => {
                 quote! { version_core::version::ResourceType::Request }
             }
-            ChangeHistoryResourceType::Response => {
+            TransformDirection::Response => {
                 quote! { version_core::version::ResourceType::Response }
             }
         };

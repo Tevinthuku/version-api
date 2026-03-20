@@ -10,6 +10,44 @@ The goal is to keep your latest request and response shapes as the source of tru
 
 See `version-actix/examples` for complete, runnable examples.
 
+There is also a standalone workspace example crate at
+`version-actix-roundtrip-example` that runs a `POST /users` endpoint with both
+request upgrading and response downgrading enabled on the same route:
+
+```bash
+cargo run -p version-actix-roundtrip-example
+```
+
+Latest request/response shape:
+
+```bash
+curl -i \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-Version: 2.0.0' \
+  -d '{"first_name":"Alice","last_name":"Doe"}' \
+  http://127.0.0.1:8080/users
+```
+
+`1.0.0` request/response shape:
+
+```bash
+curl -i \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-Version: 1.0.0' \
+  -d '{"full_name":"Alice Doe"}' \
+  http://127.0.0.1:8080/users
+```
+
+`0.5.0` request/response shape with the older `name` convention:
+
+```bash
+curl -i \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-Version: 0.5.0' \
+  -d '{"name":"Alice Doe"}' \
+  http://127.0.0.1:8080/users
+```
+
 ### Response versioning quick example
 
 ```rust
@@ -140,6 +178,7 @@ CreateUserRequestHistory::register(&mut registry).unwrap();
 - `version-api-macros`: derive macros (`ApiVersionId`, `ResponseChangeHistory`, `RequestChangeHistory`, `VersionChange`).
 - `version-core`: version change traits and transformation registry.
 - `version-actix`: Actix integration (`VersionedJsonResponder`, `VersionedJsonRequest`, version extractors).
+- `version-actix-roundtrip-example`: standalone `actix-web` server showing one endpoint that versions both requests and responses.
 
 ## Design overview
 

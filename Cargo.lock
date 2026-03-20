@@ -1294,9 +1294,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "version-actix-roundtrip-example"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+ "serde",
+ "version-actix",
+ "version-core",
+ "version-id",
+]
+
+[[package]]
 name = "version-api-macros"
 version = "0.1.0"
 dependencies = [
+ "itertools",
  "proc-macro2",
  "quote",
  "syn",

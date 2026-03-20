@@ -77,7 +77,11 @@ impl ResourceRegistry {
                 .iter()
                 .filter(|(transformer_version, _)| &ctx.user_version < *transformer_version)
                 .sorted_by(|a, b| match &ctx.direction {
+                    // Requests upgrade oldest → newest: apply the earliest
+                    // version's transformer first, walking forward to Head.
                     TransformDirection::Request => a.0.cmp(b.0),
+                    // Responses downgrade newest → oldest: apply the latest
+                    // version's transformer first, walking backward from Head.
                     TransformDirection::Response => b.0.cmp(a.0),
                 });
 

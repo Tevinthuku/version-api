@@ -1,7 +1,11 @@
 use std::any::TypeId;
 
-use version_core::{ApiVersionId, TransformDirection, VersionChange, registry::ResourceRegistry};
-use version_core::{ResponseChangeHistory, registry::TransformContext};
+use version_core::ApiVersionId;
+use version_core::ResponseChangeHistory;
+use version_core::TransformDirection;
+use version_core::VersionChange;
+use version_core::registry::ResourceRegistry;
+use version_core::registry::TransformContext;
 
 #[derive(ApiVersionId)]
 pub enum MyApiVersions {
@@ -75,12 +79,8 @@ fn main() {
     let user = User {
         name: "John Doe".to_string(),
         addresses: vec![
-            Address {
-                location: "123 Main St".to_string(),
-            },
-            Address {
-                location: "456 Main St".to_string(),
-            },
+            Address { location: "123 Main St".to_string() },
+            Address { location: "456 Main St".to_string() },
         ],
     };
 
@@ -96,10 +96,7 @@ fn main() {
         .unwrap();
     let user_with_string_addresses: CollapseUserAddressesToStrings =
         serde_json::from_slice(&bytes).unwrap();
-    assert_eq!(
-        user_with_string_addresses.addresses,
-        vec!["123 Main St", "456 Main St"]
-    );
+    assert_eq!(user_with_string_addresses.addresses, vec!["123 Main St", "456 Main St"]);
 
     let bytes = registry
         .transform(

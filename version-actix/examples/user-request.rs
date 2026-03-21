@@ -1,8 +1,15 @@
-use actix_web::{Result, post, web};
+use actix_web::Result;
+use actix_web::post;
+use actix_web::web;
 use serde::Deserialize;
 use serde::Serialize;
-use version_actix::{BaseActixVersionIdExtractor, VersionedJsonRequest, VersionedJsonResponder};
-use version_core::{ApiVersionId, RequestChangeHistory, VersionChange, registry::ResourceRegistry};
+use version_actix::BaseActixVersionIdExtractor;
+use version_actix::VersionedJsonRequest;
+use version_actix::VersionedJsonResponder;
+use version_core::ApiVersionId;
+use version_core::RequestChangeHistory;
+use version_core::VersionChange;
+use version_core::registry::ResourceRegistry;
 
 #[derive(Serialize, Deserialize, VersionChange)]
 #[description = "The latest user request model, with the first and last name"]
@@ -16,16 +23,14 @@ async fn create_user(
     user: VersionedJsonRequest<CurrentUser>,
 ) -> Result<VersionedJsonResponder<CurrentUser>> {
     let user = user.into_inner();
-    let obj = CurrentUser {
-        first_name: user.first_name,
-        last_name: user.last_name,
-    };
+    let obj = CurrentUser { first_name: user.first_name, last_name: user.last_name };
     Ok(VersionedJsonResponder(obj))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    use actix_web::{App, HttpServer};
+    use actix_web::App;
+    use actix_web::HttpServer;
 
     let mut registry = ResourceRegistry::new();
     CurrentUserResponseHistoryVersions::register(&mut registry).unwrap();
@@ -71,17 +76,12 @@ struct UserWithSingleNameField {
 
 impl From<CurrentUser> for UserWithSingleNameField {
     fn from(obj: CurrentUser) -> Self {
-        Self {
-            name: format!("{} {}", obj.first_name, obj.last_name),
-        }
+        Self { name: format!("{} {}", obj.first_name, obj.last_name) }
     }
 }
 
 impl From<UserWithSingleNameField> for CurrentUser {
     fn from(obj: UserWithSingleNameField) -> Self {
-        Self {
-            first_name: obj.name,
-            last_name: "".to_string(),
-        }
+        Self { first_name: obj.name, last_name: "".to_string() }
     }
 }

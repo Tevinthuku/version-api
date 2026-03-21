@@ -1,10 +1,14 @@
-use actix_web::{Result, get, web};
+use actix_web::Result;
+use actix_web::get;
+use actix_web::web;
 use serde::Deserialize;
 use serde::Serialize;
-use version_actix::{BaseActixVersionIdExtractor, VersionedJsonResponder};
-use version_core::{
-    ApiVersionId, ResponseChangeHistory, VersionChange, registry::ResourceRegistry,
-};
+use version_actix::BaseActixVersionIdExtractor;
+use version_actix::VersionedJsonResponder;
+use version_core::ApiVersionId;
+use version_core::ResponseChangeHistory;
+use version_core::VersionChange;
+use version_core::registry::ResourceRegistry;
 
 #[derive(Serialize, Deserialize)]
 struct CurrentUser {
@@ -14,16 +18,14 @@ struct CurrentUser {
 
 #[get("/a/{name}")]
 async fn index(name: web::Path<String>) -> Result<VersionedJsonResponder<CurrentUser>> {
-    let obj = CurrentUser {
-        first_name: name.to_string(),
-        last_name: name.to_string(),
-    };
+    let obj = CurrentUser { first_name: name.to_string(), last_name: name.to_string() };
     Ok(VersionedJsonResponder(obj))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    use actix_web::{App, HttpServer};
+    use actix_web::App;
+    use actix_web::HttpServer;
 
     let mut registry = ResourceRegistry::new();
     CurrentUserResponseHistoryVersions::register(&mut registry).unwrap();
@@ -34,10 +36,7 @@ async fn main() -> std::io::Result<()> {
     ));
     let registry = web::Data::new(registry);
     HttpServer::new(move || {
-        App::new()
-            .service(index)
-            .app_data(registry.clone())
-            .app_data(version_id_extractor.clone())
+        App::new().service(index).app_data(registry.clone()).app_data(version_id_extractor.clone())
     })
     .bind(("127.0.0.1", 8080))?
     .run()
@@ -69,8 +68,6 @@ struct UserWithSingleNameField {
 
 impl From<CurrentUser> for UserWithSingleNameField {
     fn from(obj: CurrentUser) -> Self {
-        Self {
-            name: format!("{} {}", obj.first_name, obj.last_name),
-        }
+        Self { name: format!("{} {}", obj.first_name, obj.last_name) }
     }
 }

@@ -1,13 +1,16 @@
 use std::any::TypeId;
 
+use actix_web::HttpResponse;
+use actix_web::Responder;
 use actix_web::body::BoxBody;
-use actix_web::{HttpResponse, Responder, body::EitherBody, error::JsonPayloadError};
-use actix_web::{mime, web};
+use actix_web::body::EitherBody;
+use actix_web::error::JsonPayloadError;
+use actix_web::mime;
+use actix_web::web;
 use serde::Serialize;
-use version_core::{
-    TransformDirection,
-    registry::{ResourceRegistry, TransformContext},
-};
+use version_core::TransformDirection;
+use version_core::registry::ResourceRegistry;
+use version_core::registry::TransformContext;
 
 use crate::extractors::ActixVersionIdExtractor;
 

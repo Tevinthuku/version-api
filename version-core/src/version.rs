@@ -1,5 +1,6 @@
 use bytes::Bytes;
-use std::any::{Any, TypeId};
+use std::any::Any;
+use std::any::TypeId;
 use version_id::VersionId;
 
 #[derive(Debug, Clone, Copy)]

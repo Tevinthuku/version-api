@@ -1,15 +1,17 @@
-use std::{any::TypeId, pin::Pin};
+use std::any::TypeId;
+use std::pin::Pin;
 
-use actix_web::{
-    Error,
-    web::{self, Json},
-};
-use actix_web::{FromRequest, HttpRequest, dev::Payload};
-use serde::{Serialize, de::DeserializeOwned};
-use version_core::{
-    TransformDirection,
-    registry::{ResourceRegistry, TransformContext},
-};
+use actix_web::Error;
+use actix_web::FromRequest;
+use actix_web::HttpRequest;
+use actix_web::dev::Payload;
+use actix_web::web::Json;
+use actix_web::web::{self};
+use serde::Serialize;
+use serde::de::DeserializeOwned;
+use version_core::TransformDirection;
+use version_core::registry::ResourceRegistry;
+use version_core::registry::TransformContext;
 
 use crate::ActixVersionIdExtractor;
 

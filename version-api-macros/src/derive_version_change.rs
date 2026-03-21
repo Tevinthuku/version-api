@@ -1,7 +1,14 @@
 use proc_macro::TokenStream;
 use quote::quote;
+use syn::Attribute;
+use syn::DeriveInput;
+use syn::Expr;
+use syn::ExprLit;
+use syn::Lit;
+use syn::LitStr;
+use syn::Meta;
+use syn::parse_macro_input;
 use syn::spanned::Spanned;
-use syn::{Attribute, DeriveInput, Expr, ExprLit, Lit, LitStr, Meta, parse_macro_input};
 
 pub fn version_change_derive_impl(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -26,30 +33,19 @@ fn version_change_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStr
 }
 
 fn parse_description_attr(attrs: &[Attribute]) -> syn::Result<LitStr> {
-    let description_attr = attrs
-        .iter()
-        .find(|a| a.path().is_ident("description"))
-        .ok_or_else(|| {
-            syn::Error::new(
-                proc_macro2::Span::call_site(),
-                "missing #[description = \"...\"]",
-            )
+    let description_attr =
+        attrs.iter().find(|a| a.path().is_ident("description")).ok_or_else(|| {
+            syn::Error::new(proc_macro2::Span::call_site(), "missing #[description = \"...\"]")
         })?;
 
     match &description_attr.meta {
         Meta::NameValue(name_value) => match &name_value.value {
-            Expr::Lit(ExprLit {
-                lit: Lit::Str(value),
-                ..
-            }) => Ok(value.clone()),
+            Expr::Lit(ExprLit { lit: Lit::Str(value), .. }) => Ok(value.clone()),
             _ => Err(syn::Error::new(
                 name_value.value.span(),
                 "description value must be a string literal",
             )),
         },
-        _ => Err(syn::Error::new(
-            description_attr.span(),
-            "expected #[description = \"...\"]",
-        )),
+        _ => Err(syn::Error::new(description_attr.span(), "expected #[description = \"...\"]")),
     }
 }

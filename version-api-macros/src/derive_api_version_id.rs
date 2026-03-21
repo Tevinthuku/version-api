@@ -1,6 +1,9 @@
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
-use syn::{DeriveInput, LitStr, parse_macro_input};
+use quote::format_ident;
+use quote::quote;
+use syn::DeriveInput;
+use syn::LitStr;
+use syn::parse_macro_input;
 
 pub fn api_version_derive_impl(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -44,10 +47,7 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
             .iter()
             .find(|a| a.path().is_ident("version"))
             .ok_or_else(|| {
-                syn::Error::new(
-                    variant.ident.span(),
-                    "missing #[version(\"...\")] attribute",
-                )
+                syn::Error::new(variant.ident.span(), "missing #[version(\"...\")] attribute")
             })?
             .parse_args::<LitStr>()?;
 
@@ -58,10 +58,7 @@ fn api_version_impl(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream
         })?;
 
         variant_idents.push(&variant.ident);
-        versions.push(VersionInfo {
-            raw_value: version_lit,
-            version_id,
-        });
+        versions.push(VersionInfo { raw_value: version_lit, version_id });
     }
 
     for window in versions.windows(2) {

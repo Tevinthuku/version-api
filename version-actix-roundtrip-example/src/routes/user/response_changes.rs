@@ -1,7 +1,10 @@
-use serde::{Deserialize, Serialize};
-use version_core::{ResponseChangeHistory, VersionChange};
+use serde::Deserialize;
+use serde::Serialize;
+use version_core::ResponseChangeHistory;
+use version_core::VersionChange;
 
-use crate::routes::{api_version::ApiVersion, user::CreateUserResponse};
+use crate::routes::api_version::ApiVersion;
+use crate::routes::user::CreateUserResponse;
 
 #[derive(Debug, Serialize, Deserialize, VersionChange)]
 #[description = "Clients before v2.0.0 expect `full_name` instead of split fields"]
@@ -28,10 +31,7 @@ impl From<CreateUserResponse> for LegacyCreateUserResponseV1 {
 
 impl From<LegacyCreateUserResponseV1> for LegacyCreateUserResponseV0_5 {
     fn from(response: LegacyCreateUserResponseV1) -> Self {
-        Self {
-            name: response.full_name,
-            success: response.status == "created",
-        }
+        Self { name: response.full_name, success: response.status == "created" }
     }
 }
 

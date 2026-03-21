@@ -1,13 +1,17 @@
 mod routes;
 use std::env;
 
-use actix_web::{App, HttpServer, web};
-use version_actix::{ActixVersionIdExtractor, BaseActixVersionIdExtractor};
+use actix_web::App;
+use actix_web::HttpServer;
+use actix_web::web;
+use version_actix::ActixVersionIdExtractor;
+use version_actix::BaseActixVersionIdExtractor;
 use version_core::registry::ResourceRegistry;
 
+use crate::routes::api_version::ApiVersion;
+use crate::routes::user::create_user;
 use crate::routes::user::request_changes::CreateUserRequestHistory;
 use crate::routes::user::response_changes::CreateUserResponseHistory;
-use crate::routes::{api_version::ApiVersion, user::create_user};
 
 fn build_app_config(cfg: &mut web::ServiceConfig) {
     let mut registry = ResourceRegistry::new();
@@ -21,9 +25,7 @@ fn build_app_config(cfg: &mut web::ServiceConfig) {
     let version_id_extractor: web::Data<dyn ActixVersionIdExtractor> =
         web::Data::from(version_id_extractor);
 
-    cfg.app_data(web::Data::new(registry))
-        .app_data(version_id_extractor)
-        .service(create_user);
+    cfg.app_data(web::Data::new(registry)).app_data(version_id_extractor).service(create_user);
 }
 
 #[actix_web::main]

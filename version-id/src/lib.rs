@@ -1,5 +1,7 @@
-use semver::{BuildMetadata, Prerelease};
-use std::io::{Error, ErrorKind};
+use semver::BuildMetadata;
+use semver::Prerelease;
+use std::io::Error;
+use std::io::ErrorKind;
 
 /// Wraps `semver::Version` so that version strings like "2024-01-15" are
 /// compared correctly (e.g. "10" > "2") instead of lexicographically, while

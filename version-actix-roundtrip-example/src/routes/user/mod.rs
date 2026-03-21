@@ -2,7 +2,8 @@ use actix_web::Result;
 use actix_web::post;
 use serde::Deserialize;
 use serde::Serialize;
-use version_actix::{VersionedJsonRequest, VersionedJsonResponder};
+use version_actix::VersionedJsonRequest;
+use version_actix::VersionedJsonResponder;
 use version_core::VersionChange;
 
 pub mod request_changes;

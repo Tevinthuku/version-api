@@ -1,13 +1,18 @@
 use itertools::Itertools;
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
-use quote::{ToTokens, format_ident, quote};
-use syn::{Attribute, DeriveInput, Token, Type, parse_macro_input};
-use syn::{
-    Expr,
-    parse::{Parse, ParseStream},
-    punctuated::Punctuated,
-};
+use quote::ToTokens;
+use quote::format_ident;
+use quote::quote;
+use syn::Attribute;
+use syn::DeriveInput;
+use syn::Expr;
+use syn::Token;
+use syn::Type;
+use syn::parse::Parse;
+use syn::parse::ParseStream;
+use syn::parse_macro_input;
+use syn::punctuated::Punctuated;
 
 use crate::TransformDirection;
 
@@ -36,14 +41,11 @@ fn change_history_impl(
         ));
     }
 
-    let changes_types = changes
-        .iter()
-        .map(|data| data.the_type.clone())
-        .collect::<Vec<_>>();
+    let changes_types = changes.iter().map(|data| data.the_type.clone()).collect::<Vec<_>>();
 
     let mut chain: Vec<Type> = Vec::with_capacity(changes.len() + 1);
     chain.push(head.clone());
-    chain.extend(changes_types.into_iter());
+    chain.extend(changes_types);
 
     let mut from_assertions = Vec::new();
 
@@ -220,12 +222,9 @@ impl Parse for ChangesArg {
 }
 
 fn parse_changes_attr(attrs: &[Attribute]) -> syn::Result<Vec<ChangesArg>> {
-    let changes_attr = attrs
-        .iter()
-        .find(|a| a.path().is_ident("changes"))
-        .ok_or_else(|| {
-            syn::Error::new(proc_macro2::Span::call_site(), "missing #[changes(...)]")
-        })?;
+    let changes_attr = attrs.iter().find(|a| a.path().is_ident("changes")).ok_or_else(|| {
+        syn::Error::new(proc_macro2::Span::call_site(), "missing #[changes(...)]")
+    })?;
     let args: Punctuated<ChangesArg, Token![,]> =
         changes_attr.parse_args_with(Punctuated::<ChangesArg, Token![,]>::parse_terminated)?;
     Ok(args.into_iter().collect())

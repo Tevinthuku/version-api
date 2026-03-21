@@ -1,9 +1,17 @@
-use actix_web::{App, Result, get, test, web};
-use serde::{Deserialize, Serialize};
-use version_actix::{ActixVersionIdExtractor, BaseActixVersionIdExtractor, VersionedJsonResponder};
-use version_core::{
-    ApiVersionId, ResponseChangeHistory, VersionChange, registry::ResourceRegistry,
-};
+use actix_web::App;
+use actix_web::Result;
+use actix_web::get;
+use actix_web::test;
+use actix_web::web;
+use serde::Deserialize;
+use serde::Serialize;
+use version_actix::ActixVersionIdExtractor;
+use version_actix::BaseActixVersionIdExtractor;
+use version_actix::VersionedJsonResponder;
+use version_core::ApiVersionId;
+use version_core::ResponseChangeHistory;
+use version_core::VersionChange;
+use version_core::registry::ResourceRegistry;
 
 #[derive(Serialize, Deserialize)]
 struct CurrentUser {
@@ -36,9 +44,7 @@ struct UserWithSingleNameField {
 
 impl From<CurrentUser> for UserWithSingleNameField {
     fn from(obj: CurrentUser) -> Self {
-        Self {
-            name: format!("{} {}", obj.first_name, obj.last_name),
-        }
+        Self { name: format!("{} {}", obj.first_name, obj.last_name) }
     }
 }
 
@@ -60,9 +66,7 @@ fn build_app_config(cfg: &mut web::ServiceConfig) {
     let version_id_extractor: web::Data<dyn ActixVersionIdExtractor> =
         web::Data::from(version_id_extractor);
 
-    cfg.app_data(web::Data::new(registry))
-        .app_data(version_id_extractor)
-        .service(user_endpoint);
+    cfg.app_data(web::Data::new(registry)).app_data(version_id_extractor).service(user_endpoint);
 }
 
 #[actix_rt::test]

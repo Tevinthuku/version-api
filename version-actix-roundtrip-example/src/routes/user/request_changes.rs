@@ -1,7 +1,10 @@
-use serde::{Deserialize, Serialize};
-use version_core::{RequestChangeHistory, VersionChange};
+use serde::Deserialize;
+use serde::Serialize;
+use version_core::RequestChangeHistory;
+use version_core::VersionChange;
 
-use crate::routes::{api_version::ApiVersion, user::CreateUserRequest};
+use crate::routes::api_version::ApiVersion;
+use crate::routes::user::CreateUserRequest;
 
 #[derive(Debug, Serialize, Deserialize, VersionChange)]
 #[description = "Clients before v2.0.0 send `full_name` instead of split fields"]
@@ -17,9 +20,7 @@ pub struct LegacyCreateUserRequestV0_5 {
 
 impl From<LegacyCreateUserRequestV0_5> for LegacyCreateUserRequestV1 {
     fn from(request: LegacyCreateUserRequestV0_5) -> Self {
-        Self {
-            full_name: request.name,
-        }
+        Self { full_name: request.name }
     }
 }
 

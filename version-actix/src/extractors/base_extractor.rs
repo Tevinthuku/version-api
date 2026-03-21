@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use version_id::{VersionId, VersionIdValidator};
+use version_id::VersionId;
+use version_id::VersionIdValidator;
 
 use crate::ActixVersionIdExtractor;
 
@@ -41,10 +42,8 @@ impl ActixVersionIdExtractor for BaseActixVersionIdExtractor {
         req: &actix_web::HttpRequest,
     ) -> Result<Option<VersionId>, Box<dyn std::error::Error>> {
         let headers = req.headers();
-        let maybe_raw_version = headers
-            .get(self.extractor_type.attribute_name())
-            .and_then(|v| Some(v.to_str()))
-            .transpose()?;
+        let maybe_raw_version =
+            headers.get(self.extractor_type.attribute_name()).map(|v| v.to_str()).transpose()?;
 
         let raw_version = if let Some(raw_version) = maybe_raw_version {
             raw_version
@@ -54,10 +53,7 @@ impl ActixVersionIdExtractor for BaseActixVersionIdExtractor {
 
         let version = self.version_validator.validate(raw_version).map_err(|e| {
             // TODO: Fix this error handling
-            Box::new(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                e.to_string(),
-            ))
+            Box::new(std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string()))
         })?;
 
         Ok(Some(version))

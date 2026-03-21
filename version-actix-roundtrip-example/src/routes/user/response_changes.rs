@@ -1,14 +1,7 @@
 use serde::{Deserialize, Serialize};
 use version_core::{ResponseChangeHistory, VersionChange};
 
-use crate::versioning::api_version::ApiVersion;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CreateUserResponse {
-    pub first_name: String,
-    pub last_name: String,
-    pub status: String,
-}
+use crate::routes::{api_version::ApiVersion, user::CreateUserResponse};
 
 #[derive(Debug, Serialize, Deserialize, VersionChange)]
 #[description = "Clients before v2.0.0 expect `full_name` instead of split fields"]

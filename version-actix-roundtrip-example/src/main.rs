@@ -1,28 +1,13 @@
-mod versioning;
+mod routes;
 use std::env;
 
-use actix_web::{App, HttpServer, Result, post, web};
-use version_actix::{
-    ActixVersionIdExtractor, BaseActixVersionIdExtractor, VersionedJsonRequest,
-    VersionedJsonResponder,
-};
+use actix_web::{App, HttpServer, web};
+use version_actix::{ActixVersionIdExtractor, BaseActixVersionIdExtractor};
 use version_core::registry::ResourceRegistry;
 
-use crate::versioning::api_version::ApiVersion;
-use crate::versioning::request::{CreateUserRequest, CreateUserRequestHistory};
-use crate::versioning::response::{CreateUserResponse, CreateUserResponseHistory};
-
-#[post("/users")]
-async fn create_user(
-    user: VersionedJsonRequest<CreateUserRequest>,
-) -> Result<VersionedJsonResponder<CreateUserResponse>> {
-    let user = user.into_inner();
-    Ok(VersionedJsonResponder(CreateUserResponse {
-        first_name: user.first_name,
-        last_name: user.last_name,
-        status: "created".to_string(),
-    }))
-}
+use crate::routes::user::request_changes::CreateUserRequestHistory;
+use crate::routes::user::response_changes::CreateUserResponseHistory;
+use crate::routes::{api_version::ApiVersion, user::create_user};
 
 fn build_app_config(cfg: &mut web::ServiceConfig) {
     let mut registry = ResourceRegistry::new();

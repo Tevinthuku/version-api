@@ -1,14 +1,7 @@
 use serde::{Deserialize, Serialize};
 use version_core::{RequestChangeHistory, VersionChange};
 
-use crate::versioning::api_version::ApiVersion;
-
-#[derive(Debug, Serialize, Deserialize, VersionChange)]
-#[description = "The latest request model expects first and last names separately"]
-pub struct CreateUserRequest {
-    pub first_name: String,
-    pub last_name: String,
-}
+use crate::routes::{api_version::ApiVersion, user::CreateUserRequest};
 
 #[derive(Debug, Serialize, Deserialize, VersionChange)]
 #[description = "Clients before v2.0.0 send `full_name` instead of split fields"]
